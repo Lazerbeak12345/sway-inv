@@ -1,4 +1,35 @@
-# Simple Fast Inventory
+# Sway is a experimental beyond-next-gen inventory for minetest
+
+I'll be making lots of changes, so expect almost all of the text or image documentation to be _very_ outdated. I'll try to keep as much API compatiblity as I can.
+
+In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
+
+## Long-term Goals:
+
+- I3 is awesome, but not simple.
+	- 10 × as many LOC as sfinv. (pending measurment comparison to this mod, ofc so this isn't a truly fair metric)
+	- The type of mods that I find people asking for aren't possible in _any_ inventory. I3 adds many of this type of feature - at the cost of core code complexity.
+- Use a _slightly_ different approach for generating the formspecs from I3. This approach gives a very rich API.
+- Use a modpack to reach feature-parity with I3.
+	- It's also under MIT so I can "steal" code, but I'll try my very best to give proper attribution, making use of `Co-authored-by` and `git blame`.
+- Make great use of modpacks
+	- Somehow make use of modpacks to provide API gateways so mods relying on X api should be able to work in this inventory.
+	- Feature modules. Progressive mode and other features will be modules.
+- Support multiple games. (I think most inventory mods do, but I want to be extra sure)
+
+> Why is this forked from sfinv?
+
+- Sfinv is simple enough in its core that I can spend more time porting and less time worrying about what features really matter.
+- The structure should be mostly the same
+- I want the core mod to be just as simple as sfinv.
+
+> Why call it "Sway" or "sway-inv?"
+
+That'll make more sense in due time. 😉 It's a perfect name, trust me.
+
+Everything below is subject to become outdated until I reach my minimum goals.
+
+---
 
 ![SFINV Screeny](screenshot.png)
 

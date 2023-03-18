@@ -1,5 +1,9 @@
 # SFINV Tutorial
 
+Everything below is subject to become outdated until I reach my minimum goals. See README.md
+
+---
+
 ## Introduction <!-- omit in toc -->
 
 Simple Fast Inventory (SFINV) is a mod found in Minetest Game that is used to
