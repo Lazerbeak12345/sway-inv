@@ -15,6 +15,12 @@ end
 
 dofile(minetest.get_modpath("sway") .. "/api.lua")
 
+-- Retain apis
+if minetest.global_exists("sfinv") then
+	sway._sfinv_upstream = sfinv
+	sfinv = sway
+end
+
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
 

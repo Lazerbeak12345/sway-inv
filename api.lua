@@ -4,6 +4,7 @@ sway = {
 	contexts = {},
 	enabled = true
 }
+local gui = flow.widgets
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
@@ -25,6 +26,8 @@ function sway.override_page(name, def)
 		page[key] = value
 	end
 end
+
+sfinv= sway
 
 function sway.get_nav_fs(player, context, nav, current_idx)
 	-- Only show tabs if there is more than one page
@@ -49,14 +52,58 @@ local theme_inv = [[
 		list[current_player;main;0,6.35;8,3;8]
 	]]
 
+-- This function is under the LGPL3, since it's based on code from flow
+local function force_render_flow(flow, player, ctx, form_name)
+	local mt = getmetatable(flow)
+	if mt == nil then
+		minetest.log("error", "(sway) Undocumented Flow API has changed. Metatable broke.")
+		return ""
+	end
+	local idx = mt.__index
+	if idx == nil then
+		minetest.log("error", "(sway) Undocumented Flow API has changed. __index not found. " .. dump(mt))
+		return ""
+	end
+	if idx._render == nil then
+		minetest.log("error", "(sway) Undocumented Flow API has changed. _render not found. " .. dump(idx))
+		return ""
+	end
+	local render = idx._render
+	local player_info = minetest.get_player_information(player:get_player_name())
+	local formspec_version = player_info and player_info.formspec_version
+
+	local rendered, info = render(flow, player, ctx, formspec_version, form_name)
+	info.formname = formname
+	return assert(formspec_ast.unparse(rendered))
+end
+
+function sway.make_gui(content, show_inv, size)
+	if size then
+		minetest.log("error", "(sway) make_gui doesn't yet support size. Does it need to? Let me know I guess?")
+		--	size or "size[8,9.1]",
+	end
+	minetest.log("error", "new gui")
+	return flow.make_gui(function (player, context)
+		minetest.log("error", dump(context))
+		return gui.VBox{
+			gui.embed( -- TODO Deprecated, but I'm using it anyway.
+				(size or "size[8,9.1]") ..
+				sway.get_nav_fs(player, context, context.nav_titles, context.nav_idx) ..
+				(show_inv and theme_inv or "") ..
+				content
+			),
+		}
+	end)
+end
+
 function sway.make_formspec(player, context, content, show_inv, size)
-	local tmp = {
-		size or "size[8,9.1]",
-		sway.get_nav_fs(player, context, context.nav_titles, context.nav_idx),
-		show_inv and theme_inv or "",
-		content
-	}
-	return table.concat(tmp, "")
+	local formname = nil -- TODO
+	return force_render_flow(
+		sway.make_gui(content, show_inv, size),
+		player,
+		context,
+		formname
+	)
 end
 
 function sway.get_homepage_name(player)
