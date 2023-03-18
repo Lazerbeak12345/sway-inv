@@ -16,7 +16,7 @@ end
 dofile(minetest.get_modpath("sway") .. "/api.lua")
 
 -- Load support for MT game translation.
-local S = minetest.get_translator("sfinv")
+local S = minetest.get_translator("sway")
 
 sway.register_page("sway:crafting", {
 	title = S("Crafting"),
