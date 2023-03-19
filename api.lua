@@ -65,8 +65,9 @@ local theme_inv = [[
 	]]
 
 -- This function is under the LGPL3, since it's based on code from flow
-local function force_render_flow(flow, player, ctx, form_name)
-	local mt = getmetatable(flow)
+local function force_render_flow(cb, player, ctx, form_name)
+	local fl = flow.make_gui(cb)
+	local mt = getmetatable(fl)
 	if mt == nil then
 		minetest.log("error", "(sway) Undocumented Flow API has changed. Metatable broke.")
 		return ""
@@ -76,46 +77,40 @@ local function force_render_flow(flow, player, ctx, form_name)
 		minetest.log("error", "(sway) Undocumented Flow API has changed. __index not found. " .. dump(mt))
 		return ""
 	end
-	if idx._render == nil then
+	local render = idx._render
+	if render == nil then
 		minetest.log("error", "(sway) Undocumented Flow API has changed. _render not found. " .. dump(idx))
 		return ""
 	end
-	local render = idx._render
 	local player_info = minetest.get_player_information(player:get_player_name())
 	local formspec_version = player_info and player_info.formspec_version
 
-	local rendered, info = render(flow, player, ctx, formspec_version, form_name)
-	info.formname = formname
+	local rendered, info = render(fl, player, ctx, formspec_version, form_name)
+	info.formname = form_name
 	return assert(formspec_ast.unparse(rendered))
 end
 
-function sway.make_gui(content, show_inv, size)
-	if size then
-		minetest.log("error", "(sway) make_gui doesn't yet support size. Does it need to? Let me know I guess?")
-		--	size or "size[8,9.1]",
-	end
-	minetest.log("error", "new gui")
-	return flow.make_gui(function (player, context)
-		minetest.log("error", dump(context))
-		return gui.VBox{
-			padding = 0,
-			sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
-			gui.VBox{
-				padding = .3,
-				gui.embed( -- TODO Deprecated, but I'm using it anyway.
-					(size or "size[8,9.1]") ..
-					(show_inv and theme_inv or "") ..
-					content
-				),
-			}
+function sway.make_gui(player, context, content, show_inv, size)
+	return gui.VBox{
+		padding = 0,
+		sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
+		gui.VBox{
+			padding = .3,
+			gui.embed( -- TODO Deprecated, but I'm using it anyway.
+				(size or "size[8,9.1]") ..
+				(show_inv and theme_inv or "") ..
+				content
+			),
 		}
-	end)
+	}
 end
 
 function sway.make_formspec(player, context, content, show_inv, size)
 	local formname = nil -- TODO
 	return force_render_flow(
-		sway.make_gui(content, show_inv, size),
+		function (p, c)
+			return sway.make_gui(p, c, content, show_inv, size)
+		end,
 		player,
 		context,
 		formname
