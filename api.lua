@@ -27,17 +27,29 @@ function sway.override_page(name, def)
 	end
 end
 
-sfinv= sway
-
-function sway.get_nav_fs(player, context, nav, current_idx)
-	-- Only show tabs if there is more than one page
+function sway.get_nav_gui(player, context, nav, current_idx)
 	if #nav > 1 then
-		return "tabheader[0,0;sway_nav_tabs;" .. table.concat(nav, ",") ..
-				";" .. current_idx .. ";true;false]"
+		return gui.Tabheader{
+			h = 1,
+			name = "sway_nav_tabs",
+			captions = nav,
+			current_tab = current_idx,
+			transparent = true,
+			draw_border = false,
+		}
 	else
-		return ""
+		return gui.Box{w=0, h=0, visible = false}
 	end
 end
+--function sway.get_nav_fs(player, context, nav, current_idx)
+--	-- Only show tabs if there is more than one page
+--	if #nav > 1 then
+--		return "tabheader[0,0;sway_nav_tabs;" .. table.concat(nav, ",") ..
+--				";" .. current_idx .. ";true;false]"
+--	else
+--		return ""
+--	end
+--end
 
 local theme_inv = [[
 		image[0,5.2;1,1;gui_hb_bg.png]
@@ -86,12 +98,16 @@ function sway.make_gui(content, show_inv, size)
 	return flow.make_gui(function (player, context)
 		minetest.log("error", dump(context))
 		return gui.VBox{
-			gui.embed( -- TODO Deprecated, but I'm using it anyway.
-				(size or "size[8,9.1]") ..
-				sway.get_nav_fs(player, context, context.nav_titles, context.nav_idx) ..
-				(show_inv and theme_inv or "") ..
-				content
-			),
+			padding = 0,
+			sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
+			gui.VBox{
+				padding = .3,
+				gui.embed( -- TODO Deprecated, but I'm using it anyway.
+					(size or "size[8,9.1]") ..
+					(show_inv and theme_inv or "") ..
+					content
+				),
+			}
 		}
 	end)
 end
