@@ -5,6 +5,7 @@ sway = {
 	enabled = true
 }
 local gui = flow.widgets
+local gui_nil = gui.Spacer{w=0, h=0}
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
@@ -38,7 +39,7 @@ function sway.get_nav_gui(player, context, nav, current_idx)
 			draw_border = false,
 		}
 	else
-		return gui.Box{w=0, h=0, visible = false}
+		return gui_nil
 	end
 end
 --function sway.get_nav_fs(player, context, nav, current_idx)
@@ -51,46 +52,57 @@ end
 --	end
 --end
 
-local theme_inv = [[
-		image[0,5.2;1,1;gui_hb_bg.png]
-		image[1,5.2;1,1;gui_hb_bg.png]
-		image[2,5.2;1,1;gui_hb_bg.png]
-		image[3,5.2;1,1;gui_hb_bg.png]
-		image[4,5.2;1,1;gui_hb_bg.png]
-		image[5,5.2;1,1;gui_hb_bg.png]
-		image[6,5.2;1,1;gui_hb_bg.png]
-		image[7,5.2;1,1;gui_hb_bg.png]
-		list[current_player;main;0,5.2;8,1;]
-		list[current_player;main;0,6.35;8,3;8]
-	]]
+-- TODO turn this into a function overidable by downstream. Take w and h args.
+local theme_inv = gui.VBox{
+	gui.Stack{
+		padding = 0.1,
+		gui.HBox{
+			-- Eight horizontal images
+			spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
+		},
+		gui.List{
+			inventory_location = "current_player",
+			list_name = "main",
+			w = 8,
+			h = 1,
+		}
+	},
+	gui.List{
+		inventory_location = "current_player",
+		list_name = "main",
+		w = 8,
+		h = 3,
+		starting_item_index = 8
+	}
+}
 
 -- This function is under the LGPL3, since it's based on code from flow
 local function force_render_flow(cb, player, ctx, form_name)
 	local fl = flow.make_gui(cb)
-	local mt = getmetatable(fl)
-	if mt == nil then
-		minetest.log("error", "(sway) Undocumented Flow API has changed. Metatable broke.")
-		return ""
-	end
-	local idx = mt.__index
-	if idx == nil then
-		minetest.log("error", "(sway) Undocumented Flow API has changed. __index not found. " .. dump(mt))
-		return ""
-	end
-	local render = idx._render
-	if render == nil then
-		minetest.log("error", "(sway) Undocumented Flow API has changed. _render not found. " .. dump(idx))
-		return ""
+	if fl._render == nil then
+		minetest.log("error", "(sway) Undocumented Flow API has changed. _render not found. " .. dump(fl))
+		return "size[5,1]label[0,0;Check Minetest error logs!]"
 	end
 	local player_info = minetest.get_player_information(player:get_player_name())
 	local formspec_version = player_info and player_info.formspec_version
 
-	local rendered, info = render(fl, player, ctx, formspec_version, form_name)
+	local rendered, info = fl:_render(player, ctx, formspec_version, form_name)
 	info.formname = form_name
 	return assert(formspec_ast.unparse(rendered))
 end
 
 function sway.make_gui(player, context, content, show_inv, size)
+	if size then
+		assert(type(size) == "table", "size must be table")
+	end
 	local default_size = { w = 8, h = 9.1 }
 	local actual_size = size and {
 		size.w or default_size.w,
@@ -104,9 +116,9 @@ function sway.make_gui(player, context, content, show_inv, size)
 			min_h = actual_size.h,
 			padding = .3,
 			gui.embed( -- TODO Deprecated, but I'm using it anyway.
-				(show_inv and theme_inv or "") ..
 				content
 			),
+			(show_inv and theme_inv or gui_nil),
 		}
 	}
 end
