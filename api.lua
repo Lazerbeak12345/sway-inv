@@ -91,13 +91,19 @@ local function force_render_flow(cb, player, ctx, form_name)
 end
 
 function sway.make_gui(player, context, content, show_inv, size)
+	local default_size = { w = 8, h = 9.1 }
+	local actual_size = size and {
+		size.w or default_size.w,
+		size.h or default_size.h
+	} or default_size
 	return gui.VBox{
 		padding = 0,
 		sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
 		gui.VBox{
+			min_w = actual_size.w,
+			min_h = actual_size.h,
 			padding = .3,
 			gui.embed( -- TODO Deprecated, but I'm using it anyway.
-				(size or "size[8,9.1]") ..
 				(show_inv and theme_inv or "") ..
 				content
 			),
@@ -106,14 +112,12 @@ function sway.make_gui(player, context, content, show_inv, size)
 end
 
 function sway.make_formspec(player, context, content, show_inv, size)
-	local formname = nil -- TODO
 	return force_render_flow(
 		function (p, c)
-			return sway.make_gui(p, c, content, show_inv, size)
+			return sway.make_gui(p, c, content, show_inv, size and formspec_ast.parse(size))
 		end,
 		player,
-		context,
-		formname
+		context
 	)
 end
 
