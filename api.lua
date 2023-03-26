@@ -84,10 +84,6 @@ local theme_inv = gui.VBox{
 	}
 }
 
-sway.form = flow.make_gui(function (player, ctx)
-	return gui.embed(sway.get_formspec(player, ctx))
-end)
-
 -- This function is under the LGPL3, since it's based on code from flow
 local function force_render_flow(cb, player, ctx, form_name)
 	local fl = flow.make_gui(cb)
@@ -141,7 +137,11 @@ function sway.get_homepage_name(player)
 	return "sway:crafting"
 end
 
-function sway.get_formspec(player, context)
+sway.form = flow.make_gui(function (player, ctx)
+	return sway.get_form(player, ctx)
+end)
+
+function sway.get_form(player, context)
 	-- Generate navigation tabs
 	local nav = {}
 	local nav_ids = {}
@@ -162,7 +162,7 @@ function sway.get_formspec(player, context)
 	-- Generate formspec
 	local page = sway.pages[context.page] or sway.pages["404"]
 	if page then
-		return page:get(player, context)
+		return gui.embed(page:get(player, context))
 	else
 		local old_page = context.page
 		local home_page = sway.get_homepage_name(player)
@@ -179,7 +179,7 @@ function sway.get_formspec(player, context)
 		minetest.log("warning", "[sway] Couldn't find " .. dump(old_page) ..
 				" so switching to homepage")
 
-		return sway.get_formspec(player, context)
+		return sway.get_form(player, context)
 	end
 end
 
