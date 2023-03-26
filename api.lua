@@ -84,6 +84,10 @@ local theme_inv = gui.VBox{
 	}
 }
 
+sway.form = flow.make_gui(function (player, ctx)
+	return gui.embed(sway.get_formspec(player, ctx))
+end)
+
 -- This function is under the LGPL3, since it's based on code from flow
 local function force_render_flow(cb, player, ctx, form_name)
 	local fl = flow.make_gui(cb)
@@ -196,9 +200,7 @@ function sway.set_context(player, context)
 end
 
 function sway.set_player_inventory_formspec(player, context)
-	local fs = sway.get_formspec(player,
-			context or sway.get_or_create_context(player))
-	player:set_inventory_formspec(fs)
+	sway.form:set_as_inventory_for(player, context or sway.get_or_create_context(player))
 end
 
 function sway.set_page(player, pagename)
