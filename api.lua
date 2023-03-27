@@ -84,21 +84,6 @@ local theme_inv = gui.VBox{
 	}
 }
 
--- This function is under the LGPL3, since it's based on code from flow
-local function force_render_flow(cb, player, ctx, form_name)
-	local fl = flow.make_gui(cb)
-	if fl._render == nil then
-		minetest.log("error", "(sway) Undocumented Flow API has changed. _render not found. " .. dump(fl))
-		return "size[5,1]label[0,0;Check Minetest error logs!]"
-	end
-	local player_info = minetest.get_player_information(player:get_player_name())
-	local formspec_version = player_info and player_info.formspec_version
-
-	local rendered, info = fl:_render(player, ctx, formspec_version, form_name)
-	info.formname = form_name
-	return assert(formspec_ast.unparse(rendered))
-end
-
 function sway.make_form(player, context, content, show_inv, size)
 	if size then
 		assert(type(size) == "table", "size must be table")
@@ -119,17 +104,6 @@ function sway.make_form(player, context, content, show_inv, size)
 			(show_inv and theme_inv or gui_nil),
 		}
 	}
-end
-
-function sway.make_formspec(player, context, content, show_inv, size)
-	local parsed_size = size and formspec_ast.parse(size) or { w = nil, h = nil }
-	return force_render_flow(
-		function (p, c)
-			return sway.make_form(p, c, gui.embed(content, parsed_size.w, parsed_size.h), show_inv, parsed_size)
-		end,
-		player,
-		context
-	)
 end
 
 function sway.get_homepage_name(player)
@@ -161,7 +135,7 @@ function sway.get_form(player, context)
 	-- Generate formspec
 	local page = sway.pages[context.page] or sway.pages["404"]
 	if page then
-		return gui.embed(page:get(player, context))
+		return page:get(player, context)
 	else
 		local old_page = context.page
 		local home_page = sway.get_homepage_name(player)

@@ -15,24 +15,44 @@ end
 
 dofile(minetest.get_modpath("sway") .. "/api.lua")
 
--- Retain apis
+--[[ Retain apis
 if minetest.global_exists("sfinv") then
 	sway._sfinv_upstream = sfinv
 	sfinv = sway
-end
+end]]
 
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
 
+local gui = flow.widgets
+
 sway.register_page("sway:crafting", {
 	title = S("Crafting"),
 	get = function(self, player, context)
-		return sway.make_formspec(player, context, [[
-				list[current_player;craft;1.75,0.5;3,3;]
-				list[current_player;craftpreview;5.75,1.5;1,1;]
-				image[4.75,1.5;1,1;sway_crafting_arrow.png]
-				listring[current_player;main]
-				listring[current_player;craft]
-			]], true)
+		return sway.make_form(player, context, gui.HBox{
+			align_h = "center",
+			gui.List{
+				inventory_location = "current_player",
+				list_name = "craft",
+				w = 3, h = 3
+			},
+			gui.Image{
+				w = 1, h = 1,
+				texture_name = "sway_crafting_arrow.png"
+			},
+			gui.List{
+				inventory_location = "current_player",
+				list_name = "craftpreview",
+				w = 1, h = 1
+			},
+			gui.Listring{
+				inventory_location = "current_player",
+				list_name = "main"
+			},
+			gui.Listring{
+				inventory_location = "current_player",
+				list_name = "craft"
+			}
+		}, true)
 	end
 })
