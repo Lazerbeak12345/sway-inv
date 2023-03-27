@@ -99,7 +99,7 @@ local function force_render_flow(cb, player, ctx, form_name)
 	return assert(formspec_ast.unparse(rendered))
 end
 
-function sway.make_gui(player, context, content, show_inv, size)
+function sway.make_form(player, context, content, show_inv, size)
 	if size then
 		assert(type(size) == "table", "size must be table")
 	end
@@ -115,18 +115,17 @@ function sway.make_gui(player, context, content, show_inv, size)
 			min_w = actual_size.w,
 			min_h = actual_size.h,
 			padding = .3,
-			gui.embed( -- TODO Deprecated, but I'm using it anyway.
-				content
-			),
+			content,
 			(show_inv and theme_inv or gui_nil),
 		}
 	}
 end
 
 function sway.make_formspec(player, context, content, show_inv, size)
+	local parsed_size = size and formspec_ast.parse(size) or { w = nil, h = nil }
 	return force_render_flow(
 		function (p, c)
-			return sway.make_gui(p, c, content, show_inv, size and formspec_ast.parse(size))
+			return sway.make_form(p, c, gui.embed(content, parsed_size.w, parsed_size.h), show_inv, parsed_size)
 		end,
 		player,
 		context
