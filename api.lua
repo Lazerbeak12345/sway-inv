@@ -28,15 +28,18 @@ function sway.override_page(name, def)
 	end
 end
 
-function sway.get_nav_gui(player, context, nav, current_idx)
-	if #nav > 1 then
+function sway.get_nav_gui(player, context, nav_titles, current_idx)
+	if #nav_titles > 1 then
 		return gui.Tabheader{
 			h = 1,
 			name = "sway_nav_tabs",
-			captions = nav,
+			captions = nav_titles,
 			current_tab = current_idx,
 			transparent = true,
 			draw_border = false,
+			on_event = function (p, c)
+				sway.set_page(p, c.nav[c.form.sway_nav_tabs])
+			end
 		}
 	else
 		return gui_nil
@@ -196,6 +199,7 @@ minetest.register_on_leaveplayer(function(player)
 	sway.contexts[player:get_player_name()] = nil
 end)
 
+--[[
 minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "" or not sway.enabled then
 		return false
@@ -227,3 +231,4 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 	end
 end)
+]]
