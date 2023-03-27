@@ -42,15 +42,6 @@ function sway.get_nav_gui(player, context, nav, current_idx)
 		return gui_nil
 	end
 end
---function sway.get_nav_fs(player, context, nav, current_idx)
---	-- Only show tabs if there is more than one page
---	if #nav > 1 then
---		return "tabheader[0,0;sway_nav_tabs;" .. table.concat(nav, ",") ..
---				";" .. current_idx .. ";true;false]"
---	else
---		return ""
---	end
---end
 
 -- TODO turn this into a function overidable by downstream. Take w and h args.
 local theme_inv = gui.VBox{
