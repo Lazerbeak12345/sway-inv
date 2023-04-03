@@ -1,7 +1,7 @@
 sway = {
 	pages = {},
 	pages_unordered = {},
-	contexts = {},
+	current_page = {},
 	enabled = true
 }
 local gui = flow.widgets
@@ -29,7 +29,7 @@ function sway.override_page(name, def)
 end
 
 function sway.get_nav_gui_tabevent(player, context)
-	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
+	sway.set_page(player, context, context.nav[context.form.sway_nav_tabs])
 end
 
 function sway.get_nav_gui(player, context, nav_titles, current_idx)
@@ -111,6 +111,7 @@ sway.form = flow.make_gui(function (player, ctx)
 end)
 
 function sway.get_form(player, context)
+	context.page = sway.get_page(player)
 	-- Generate navigation tabs
 	local nav = {}
 	local nav_ids = {}
@@ -143,41 +144,25 @@ function sway.get_form(player, context)
 			return gui_nil
 		end
 
-		context.page = home_page
-		assert(sway.pages[context.page], "[sway] Invalid homepage")
 		minetest.log("warning", "[sway] Couldn't find " .. dump(old_page) ..
 				" so switching to homepage")
+		sway.set_page(player, context, home_page)
+		assert(sway.pages[context.page], "[sway] Invalid homepage")
 
 		return sway.get_form(player, context)
 	end
 end
 
-function sway.get_or_create_context(player)
-	local name = player:get_player_name()
-	local context = sway.contexts[name]
-	if not context then
-		context = {
-			page = sway.get_homepage_name(player)
-		}
-		sway.contexts[name] = context
-	end
-	return context
-end
-
-function sway.set_context(player, context)
-	sway.contexts[player:get_player_name()] = context
-end
-
 function sway.set_player_inventory_formspec(player, context)
-	sway.form:set_as_inventory_for(player, context or sway.get_or_create_context(player))
+	sway.form:set_as_inventory_for(player, context or { page = sway.get_page(player) })
 end
 
-function sway.set_page(player, pagename)
-	local context = sway.get_or_create_context(player)
-	local oldpage = sway.pages[context.page]
+function sway.set_page(player, context, pagename)
+	local oldpage = sway.pages[sway.get_page(player)]
 	if oldpage and oldpage.on_leave then
 		oldpage:on_leave(player, context)
 	end
+	sway.current_page[player:get_player_name()] = pagename
 	context.page = pagename
 	local page = sway.pages[pagename]
 	if page.on_enter then
@@ -187,8 +172,8 @@ function sway.set_page(player, pagename)
 end
 
 function sway.get_page(player)
-	local context = sway.contexts[player:get_player_name()]
-	return context and context.page or sway.get_homepage_name(player)
+	local page = sway.current_page[player:get_player_name()]
+	return page or sway.get_homepage_name(player)
 end
 
 minetest.register_on_joinplayer(function(player)
@@ -198,5 +183,5 @@ minetest.register_on_joinplayer(function(player)
 end)
 
 minetest.register_on_leaveplayer(function(player)
-	sway.contexts[player:get_player_name()] = nil
+	sway.current_page[player:get_player_name()] = nil
 end)
