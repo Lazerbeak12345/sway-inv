@@ -28,6 +28,10 @@ function sway.override_page(name, def)
 	end
 end
 
+function sway.get_nav_gui_tabevent(player, context)
+	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
+end
+
 function sway.get_nav_gui(player, context, nav_titles, current_idx)
 	if #nav_titles > 1 then
 		return gui.Tabheader{
@@ -37,9 +41,7 @@ function sway.get_nav_gui(player, context, nav_titles, current_idx)
 			current_tab = current_idx,
 			transparent = true,
 			draw_border = false,
-			on_event = function (p, c)
-				sway.set_page(p, c.nav[c.form.sway_nav_tabs])
-			end
+			on_event = sway.get_nav_gui_tabevent
 		}
 	else
 		return gui_nil
