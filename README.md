@@ -15,9 +15,9 @@
 <!-- Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
 official figlet "contributed" collection. `pepper` from the same collection was a close 2nd. -->
 
-I'll be making lots of changes, so expect almost all of the text or image documentation to be _very_ outdated. I'll try to keep as much API compatiblity as I can.
-
-In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
+> Lots of changes underway! Not ready yet.
+> 
+> In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
 
 ## Long-term Goals:
 
@@ -51,46 +51,46 @@ Everything below is subject to become outdated until I reach my minimum goals.
 A cleaner, simpler solution to having an advanced inventory in Minetest.
 
 Written by rubenwardy.\\
+Modified by Lazerbeak12345 for flow.\\
 License: MIT
 
-* sfinv_crafting_arrow.png - by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
+* sway_crafting_arrow.png - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
 
 ## API
 
-It is recommended that you read this link for a good introduction to the sfinv API
-by its author: https://rubenwardy.com/minetest_modding_book/en/players/sfinv.html
+Based on sfinv, but not compatible with sfinv.
 
-### sfinv Methods
+### sway Methods
 
 **Pages**
 
-* sfinv.set_page(player, pagename) - changes the page
-* sfinv.get_homepage_name(player) - get the page name of the first page to show to a player
-* sfinv.register_page(name, def) - register a page, see section below
-* sfinv.override_page(name, def) - overrides fields of an page registered with register_page.
+* sway.set_page(player, pagename) - changes the page
+* sway.get_homepage_name(player) - get the page name of the first page to show to a player
+* sway.register_page(name, def) - register a page, see section below
+* sway.override_page(name, def) - overrides fields of an page registered with register_page.
     * Note: Page must already be defined, (opt)depend on the mod defining it.
-* sfinv.set_player_inventory_formspec(player) - (re)builds page formspec
-             and calls set_inventory_formspec().
-* sfinv.get_formspec(player, context) - builds current page's formspec
+* sway.set_player_inventory_formspec(player) - (re)builds page formspec
 
 **Contexts**
 
-* sfinv.get_or_create_context(player) - gets the player's context
-* sfinv.set_context(player, context)
+> Might be deprecated in the future
+
+* sway.get_or_create_context(player) - gets the player's context
+* sway.set_context(player, context)
 
 **Theming**
 
-* sfinv.make_formspec(player, context, content, show_inv, size) - adds a theme to a formspec
+* sway.make_form(player, context, content, show_inv, size) - adds a theme to a form
     * show_inv, defaults to false. Whether to show the player's main inventory
-    * size, defaults to `size[8,8.6]` if not specified
-* sfinv.get_nav_fs(player, context, nav, current_idx) - creates tabheader or ""
+    * size, defaults to `{ w = 8, h = 8.6 }` if not specified
+* sway.get_nav(player, context, nav, current_idx) - creates tabheader or returns a spacer that is 0 by 0 and doesn't expand.
 
-### sfinv Members
+### sway Members
 
 * pages - table of pages[pagename] = def
 * pages_unordered - array table of pages in order of addition (used to build navigation tabs).
 * contexts - contexts[playername] = player_context
-* enabled - set to false to disable. Good for inventory rehaul mods like unified inventory
+* enabled - set to false to disable. Good for inventory rehaul mods.
 
 ### Context
 
@@ -100,41 +100,52 @@ A table with these keys:
 * nav - a list of page names
 * nav_titles - a list of page titles
 * nav_idx - current nav index (in nav and nav_titles)
+* anything from the flow library
 * any thing you want to store
-    * sfinv will clear the stored data on log out / log in
+    * sway will clear the stored data on log out / log in
 
-### sfinv.register_page
+### sway.register_page
 
-sfinv.register_page(name, def)
+sway.register_page(name, def)
 
 def is a table containing:
 
 * `title` - human readable page name (required)
-* `get(self, player, context)` - returns a formspec string. See formspec variables. (required)
+* `get(self, player, context)` - returns a flow form. (required)
 * `is_in_nav(self, player, context)` - return true to show in the navigation (the tab header, by default)
-* `on_player_receive_fields(self, player, context, fields)` - on formspec submit.
 * `on_enter(self, player, context)` - called when the player changes pages, usually using the tabs.
 * `on_leave(self, player, context)` - when leaving this page to go to another, called before other's on_enter
 
 ### get formspec
 
-Use sfinv.make_formspec to apply a layout:
+Use sfinv.make_form to apply a layout:
 
-	return sfinv.make_formspec(player, context, [[
-		list[current_player;craft;1.75,0.5;3,3;]
-		list[current_player;craftpreview;5.75,1.5;1,1;]
-		image[4.75,1.5;1,1;gui_furnace_arrow_bg.png^[transformR270]
-		listring[current_player;main]
-		listring[current_player;craft]
-		image[0,4.25;1,1;gui_hb_bg.png]
-		image[1,4.25;1,1;gui_hb_bg.png]
-		image[2,4.25;1,1;gui_hb_bg.png]
-		image[3,4.25;1,1;gui_hb_bg.png]
-		image[4,4.25;1,1;gui_hb_bg.png]
-		image[5,4.25;1,1;gui_hb_bg.png]
-		image[6,4.25;1,1;gui_hb_bg.png]
-		image[7,4.25;1,1;gui_hb_bg.png]
-	]], true)
+    local gui = flow.widgets
+	return sfinv.make_form(player, context, gui.HBox{
+			align_h = "center",
+			gui.List{
+				inventory_location = "current_player",
+				list_name = "craft",
+				w = 3, h = 3
+			},
+			gui.Image{
+				w = 1, h = 1,
+				texture_name = "sway_crafting_arrow.png"
+			},
+			gui.List{
+				inventory_location = "current_player",
+				list_name = "craftpreview",
+				w = 1, h = 1
+			},
+			gui.Listring{
+				inventory_location = "current_player",
+				list_name = "main"
+			},
+			gui.Listring{
+				inventory_location = "current_player",
+				list_name = "craft"
+			}
+    }, true)
 
 See above (methods section) for more options.
 
@@ -142,21 +153,23 @@ See above (methods section) for more options.
 
 Simply override this function to change the navigation:
 
-	function sfinv.get_nav_fs(player, context, nav, current_idx)
-		return "navformspec"
+    local gui = flow.widgets
+	function sfinv.get_nav_gui(player, context, nav_titles, current_idx)
+		return gui.Label{ label = "nav gui" }
 	end
 
 And override this function to change the layout:
 
-	function sfinv.make_formspec(player, context, content, show_inv, size)
-		local tmp = {
-			size or "size[8,8.6]",
-			theme_main,
-			sfinv.get_nav_fs(player, context, context.nav_titles, context.nav_idx),
-			content
-		}
-		if show_inv then
-			tmp[4] = theme_inv
-		end
-		return table.concat(tmp, "")
+	function sfinv.make_form(player, context, content, show_inv, size)
+      return gui.VBox{
+          padding = 0,
+          sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
+          gui.VBox{
+              min_w = size.w,
+              min_h = size.h,
+              padding = .3,
+              content,
+              (show_inv and theme_inv or gui.Spacer{expand=false}),
+          }
+      }
 	end
