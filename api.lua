@@ -140,7 +140,7 @@ function sway.get_form(player, context)
 			minetest.log("error", "[sway] Couldn't find " .. dump(old_page) ..
 					", which is also the old page")
 
-			return ""
+			return gui_nil
 		end
 
 		context.page = home_page
