@@ -1,5 +1,20 @@
 # Sway is a experimental beyond-next-gen inventory for minetest
 
+```text
+ ____                                      ______
+/\  _`\                                   /\__  _\
+\ \,\L\_\  __  __  __     __     __  __   \/_/\ \/     ___   __  __
+ \/_\__ \ /\ \/\ \/\ \  /'__`\  /\ \/\ \     \ \ \   /' _ `\/\ \/\ \
+   /\ \L\ \ \ \_/ \_/ \/\ \L\.\_\ \ \_\ \     \_\ \__/\ \/\ \ \ \_/ |__
+   \ `\____\ \___x___/'\ \__/.\_\\/`____ \    /\_____\ \_\ \_\ \___//\_\
+    \/_____/\/__//__/   \/__/\/_/ `/___/> \   \/_____/\/_/\/_/\/__/ \/_/
+                                     /\___/
+                                     \/__/
+```
+
+<!-- Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
+official figlet "contributed" collection. `pepper` from the same collection was a close 2nd. -->
+
 I'll be making lots of changes, so expect almost all of the text or image documentation to be _very_ outdated. I'll try to keep as much API compatiblity as I can.
 
 In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
