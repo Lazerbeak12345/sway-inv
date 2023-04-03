@@ -200,37 +200,3 @@ end)
 minetest.register_on_leaveplayer(function(player)
 	sway.contexts[player:get_player_name()] = nil
 end)
-
---[[
-minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if formname ~= "" or not sway.enabled then
-		return false
-	end
-
-	-- Get Context
-	local name = player:get_player_name()
-	local context = sway.contexts[name]
-	if not context then
-		sway.set_player_inventory_formspec(player)
-		return false
-	end
-
-	-- Was a tab selected?
-	if fields.sway_nav_tabs and context.nav then
-		local tid = tonumber(fields.sway_nav_tabs)
-		if tid and tid > 0 then
-			local id = context.nav[tid]
-			local page = sway.pages[id]
-			if id and page then
-				sway.set_page(player, id)
-			end
-		end
-	else
-		-- Pass event to page
-		local page = sway.pages[context.page]
-		if page and page.on_player_receive_fields then
-			return page:on_player_receive_fields(player, context, fields)
-		end
-	end
-end)
-]]
