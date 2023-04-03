@@ -13,13 +13,15 @@ do
 	end
 end
 
-dofile(minetest.get_modpath("sway") .. "/api.lua")
+local modpath = minetest.get_modpath("sway")
+dofile(modpath .. "/api.lua")
 
---[[ Retain apis
+-- Retain apis
 if minetest.global_exists("sfinv") then
-	sway._sfinv_upstream = sfinv
-	sfinv = sway
-end]]
+	dofile(modpath .. "/fake_sfinv.lua")
+	-- sway._sfinv_upstream = sfinv
+	-- sfinv = sway
+end
 
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
