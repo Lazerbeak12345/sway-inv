@@ -5,7 +5,7 @@ sway = {
 	enabled = true
 }
 local gui = flow.widgets
-local gui_nil = gui.Spacer{w=0, h=0}
+local gui_nil = gui.Spacer{expand=false}
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
