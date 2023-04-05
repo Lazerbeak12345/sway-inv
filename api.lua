@@ -50,6 +50,8 @@ end
 
 -- TODO turn this into a function overidable by downstream. Take w and h args.
 local theme_inv = gui.VBox{
+	align_v = "end",
+	expand = true,
 	gui.Stack{
 		padding = 0.1,
 		gui.HBox{
