@@ -1,6 +1,5 @@
 -- sway/init.lua
 print[[
-
                           Inventory powered by
  ____                                      ______
 /\  _`\                                   /\__  _\
