@@ -53,7 +53,6 @@ local theme_inv = gui.VBox{
 	align_v = "end",
 	expand = true,
 	gui.Stack{
-		padding = 0.1,
 		gui.HBox{
 			-- Eight horizontal images
 			spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
@@ -97,7 +96,7 @@ function sway.make_form(player, context, content, show_inv, size)
 		gui.VBox{
 			min_w = actual_size.w,
 			min_h = actual_size.h,
-			padding = .3,
+			padding = .4,
 			content,
 			(show_inv and theme_inv or gui_nil),
 		}
