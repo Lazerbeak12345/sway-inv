@@ -48,38 +48,40 @@ function sway.get_nav_gui(player, context, nav_titles, current_idx)
 	end
 end
 
--- TODO turn this into a function overidable by downstream. Take w and h args.
-local theme_inv = gui.VBox{
-	align_v = "end",
-	expand = true,
-	gui.Stack{
-		gui.HBox{
-			-- Eight horizontal images
-			spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-			gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
+-- TODO Take w and h args.
+function sway.make_inventory_tiles()
+	return gui.VBox{
+		align_v = "end",
+		expand = true,
+		gui.Stack{
+			gui.HBox{
+				-- Eight horizontal images
+				spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
+				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
+			},
+			gui.List{
+				inventory_location = "current_player",
+				list_name = "main",
+				w = 8,
+				h = 1,
+			}
 		},
 		gui.List{
 			inventory_location = "current_player",
 			list_name = "main",
 			w = 8,
-			h = 1,
+			h = 3,
+			starting_item_index = 8
 		}
-	},
-	gui.List{
-		inventory_location = "current_player",
-		list_name = "main",
-		w = 8,
-		h = 3,
-		starting_item_index = 8
 	}
-}
+end
 
 function sway.make_form(player, context, content, show_inv, size)
 	if size then
@@ -98,7 +100,7 @@ function sway.make_form(player, context, content, show_inv, size)
 			min_h = actual_size.h,
 			padding = .4,
 			content,
-			(show_inv and theme_inv or gui_nil),
+			(show_inv and sway.make_inventory_tiles() or gui_nil),
 		}
 	}
 end
