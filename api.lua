@@ -148,7 +148,8 @@ function sway.get_form(player, context)
 
 		minetest.log("warning", "[sway] Couldn't find " .. dump(old_page) ..
 				" so switching to homepage")
-		sway.set_page(player, context, home_page)
+		sway.set_page(player, home_page)
+		context = sway.get_or_create_context(player)
 		assert(sway.pages[context.page], "[sway] Invalid homepage")
 
 		return sway.get_form(player, context)
@@ -159,6 +160,7 @@ function sway.get_or_create_context(player)
 	local name = player:get_player_name()
 	local context = sway.contexts[name]
 	if not context then
+		-- This must be the only place where a "fresh" context is generated.
 		context = {
 			page = sway.get_homepage_name(player)
 		}
@@ -172,7 +174,7 @@ function sway.set_context(player, context)
 end
 
 function sway.set_player_inventory_formspec(player, context)
-	sway.form:set_as_inventory_for(player, context or { page = sway.get_page(player) })
+	sway.form:set_as_inventory_for(player, context or sway.get_or_create_context(player))
 end
 
 function sway.set_page(player, pagename)
