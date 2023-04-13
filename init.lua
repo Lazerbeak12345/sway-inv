@@ -43,30 +43,35 @@ local gui = flow.widgets
 sway.register_page("sway:crafting", {
 	title = S("Crafting"),
 	get = function(self, player, context)
-		return sway.make_form(player, context, gui.HBox{
-			align_h = "center",
-			gui.List{
-				inventory_location = "current_player",
-				list_name = "craft",
-				w = 3, h = 3
-			},
-			gui.Image{
-				w = 1, h = 1,
-				texture_name = "sway_crafting_arrow.png"
-			},
-			gui.List{
-				inventory_location = "current_player",
-				list_name = "craftpreview",
-				w = 1, h = 1
-			},
-			gui.Listring{
-				inventory_location = "current_player",
-				list_name = "main"
-			},
-			gui.Listring{
-				inventory_location = "current_player",
-				list_name = "craft"
+		return sway.widgets.form{
+			player = player,
+			context = context,
+			show_inv = true,
+			gui.HBox{
+				align_h = "center",
+				gui.List{
+					inventory_location = "current_player",
+					list_name = "craft",
+					w = 3, h = 3
+				},
+				gui.Image{
+					w = 1, h = 1,
+					texture_name = "sway_crafting_arrow.png"
+				},
+				gui.List{
+					inventory_location = "current_player",
+					list_name = "craftpreview",
+					w = 1, h = 1
+				},
+				gui.Listring{
+					inventory_location = "current_player",
+					list_name = "main"
+				},
+				gui.Listring{
+					inventory_location = "current_player",
+					list_name = "craft"
+				}
 			}
-		}, true)
+		}
 	end
 })

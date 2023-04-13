@@ -2,6 +2,7 @@ sway = {
 	pages = {},
 	pages_unordered = {},
 	contexts = {},
+	widgets = {},
 	enabled = true
 }
 local gui = flow.widgets
@@ -32,7 +33,11 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
-function sway.get_nav_gui(player, context, nav_titles, current_idx)
+function sway.widgets.nav_gui(fields)
+	-- local player = fields.player
+	-- local context = fields.context
+	local nav_titles = fields.nav_titles
+	local current_idx = fields.current_idx
 	if #nav_titles > 1 then
 		return gui.Tabheader{
 			h = 1,
@@ -49,7 +54,7 @@ function sway.get_nav_gui(player, context, nav_titles, current_idx)
 end
 
 -- TODO Take w and h args.
-function sway.make_inventory_tiles()
+function sway.widgets.inventory_tiles()
 	return gui.VBox{
 		align_v = "end",
 		expand = true,
@@ -83,7 +88,17 @@ function sway.make_inventory_tiles()
 	}
 end
 
-function sway.make_form(player, context, content, show_inv, size)
+function sway.widgets.form(fields)
+	local player = fields.player
+	fields.player = nil
+	local context = fields.context
+	fields.context = nil
+	local show_inv = fields.show_inv
+	fields.show_inv = nil
+	local size = fields.size
+	fields.show_inv = nil
+	local content = fields
+
 	if size then
 		assert(type(size) == "table", "size must be table")
 	end
@@ -92,16 +107,23 @@ function sway.make_form(player, context, content, show_inv, size)
 		size.w or default_size.w,
 		size.h or default_size.h
 	} or default_size
+
+	content.min_w = actual_size.w
+	content.min_h = actual_size.h
+	content.padding = .4
+	if show_inv then
+		content[#content+1] = sway.widgets.inventory_tiles()
+	end
+
 	return gui.VBox{
 		padding = 0,
-		sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
-		gui.VBox{
-			min_w = actual_size.w,
-			min_h = actual_size.h,
-			padding = .4,
-			content,
-			(show_inv and sway.make_inventory_tiles() or gui_nil),
-		}
+		sway.widgets.nav_gui({
+			player = player,
+			context = context,
+			nav_titles = context.nav_titles,
+			current_idx = context.nav_idx
+		}),
+		gui.VBox(content)
 	}
 end
 
