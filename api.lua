@@ -53,38 +53,41 @@ function sway.widgets.nav_gui(fields)
 	end
 end
 
--- TODO Take w and h args.
-function sway.widgets.inventory_tiles()
+function sway.widgets.inventory_tiles(fields)
+	if fields == nil then
+		fields = {}
+	end
+	-- local player = fields.player
+	-- local context = fields.context
+	local w = fields.w or 8
+	local h = fields.h or 4
+	-- N horizontal images
+	local hotbar_row = {
+		spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
+	}
+	for _=1, w do
+		hotbar_row[#hotbar_row+1] = gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
+	end
 	return gui.VBox{
 		align_v = "end",
 		expand = true,
 		gui.Stack{
-			gui.HBox{
-				-- Eight horizontal images
-				spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" },
-				gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
-			},
+			align_h = "center",
+			gui.HBox(hotbar_row),
 			gui.List{
 				inventory_location = "current_player",
 				list_name = "main",
-				w = 8,
+				w = w,
 				h = 1,
 			}
 		},
-		gui.List{
+		h > 1 and gui.List{
 			inventory_location = "current_player",
 			list_name = "main",
-			w = 8,
-			h = 3,
-			starting_item_index = 8
-		}
+			w = w,
+			h = h - 1,
+			starting_item_index = w
+		} or gui_nil
 	}
 end
 
