@@ -110,29 +110,24 @@ end
 
 function widgets.Form(fields)
 	local player = fields.player
-	fields.player = nil
 	local context = fields.context
-	fields.context = nil
 	local show_inv = fields.show_inv
-	fields.show_inv = nil
 	local size = fields.size
-	fields.show_inv = nil
-	local content = fields
 
 	if size then
 		assert(type(size) == "table", "size must be table")
 	end
 	local default_size = { w = 8, h = 9.1 }
 	local actual_size = size and {
-		size.w or default_size.w,
-		size.h or default_size.h
+		w = size.w or default_size.w,
+		h = size.h or default_size.h
 	} or default_size
 
-	content.min_w = actual_size.w
-	content.min_h = actual_size.h
-	content.padding = .4
+	fields.min_w = actual_size.w
+	fields.min_h = actual_size.h
+	fields.padding = .4
 	if show_inv then
-		content[#content+1] = gui.sway.InventoryTiles()
+		fields[#fields+1] = gui.sway.InventoryTiles()
 	end
 
 	return gui.VBox{
@@ -143,7 +138,7 @@ function widgets.Form(fields)
 			nav_titles = context.nav_titles,
 			current_idx = context.nav_idx
 		}),
-		gui.VBox(content)
+		gui.VBox(fields)
 	}
 end
 
