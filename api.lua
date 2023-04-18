@@ -3,9 +3,26 @@ sway = {
 	pages_unordered = {},
 	contexts = {},
 	widgets = {},
+	mods = { sway = { widgets = {} } },
 	enabled = true
 }
-local gui = flow.widgets
+local widgets = sway.mods.sway.widgets
+-- TODO make into function so children still depend directly on flow
+local widgets_metatable = {}
+function widgets_metatable:__index(key)
+	local value
+	if sway.mods[key] and sway.mods[key].widgets then
+		value = sway.mods[key].widgets
+	else
+		value = flow.widgets[key]
+	end
+	rawset(self, key, value)
+	return value
+end
+function widgets_metatable.__newindex() end
+setmetatable(sway.widgets, widgets_metatable)
+
+local gui = sway.widgets
 local gui_nil = gui.Spacer{expand=false}
 
 function sway.register_page(name, def)
@@ -33,7 +50,7 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
-function sway.widgets.nav_gui(fields)
+function widgets.NavGui(fields)
 	-- local player = fields.player
 	-- local context = fields.context
 	local nav_titles = fields.nav_titles
@@ -53,7 +70,7 @@ function sway.widgets.nav_gui(fields)
 	end
 end
 
-function sway.widgets.inventory_tiles(fields)
+function widgets.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
 	end
@@ -91,7 +108,7 @@ function sway.widgets.inventory_tiles(fields)
 	}
 end
 
-function sway.widgets.form(fields)
+function widgets.Form(fields)
 	local player = fields.player
 	fields.player = nil
 	local context = fields.context
@@ -115,12 +132,12 @@ function sway.widgets.form(fields)
 	content.min_h = actual_size.h
 	content.padding = .4
 	if show_inv then
-		content[#content+1] = sway.widgets.inventory_tiles()
+		content[#content+1] = gui.sway.InventoryTiles()
 	end
 
 	return gui.VBox{
 		padding = 0,
-		sway.widgets.nav_gui({
+		gui.sway.NavGui({
 			player = player,
 			context = context,
 			nav_titles = context.nav_titles,

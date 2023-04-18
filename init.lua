@@ -38,12 +38,12 @@ end]]
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
 
-local gui = flow.widgets
+local gui = sway.widgets
 
 sway.register_page("sway:crafting", {
 	title = S("Crafting"),
 	get = function(self, player, context)
-		return sway.widgets.form{
+		return gui.sway.Form{
 			player = player,
 			context = context,
 			show_inv = true,
