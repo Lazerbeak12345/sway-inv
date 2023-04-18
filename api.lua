@@ -6,7 +6,7 @@ sway = {
 	mods = { sway = { widgets = {} } },
 	enabled = true
 }
-local widgets = sway.mods.sway.widgets
+local sway_widgets = sway.mods.sway.widgets
 -- TODO make into function so children still depend directly on flow
 local widgets_metatable = {}
 function widgets_metatable:__index(key)
@@ -50,7 +50,7 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
-function widgets.NavGui(fields)
+function sway_widgets.NavGui(fields)
 	-- local player = fields.player
 	-- local context = fields.context
 	local nav_titles = fields.nav_titles
@@ -70,7 +70,7 @@ function widgets.NavGui(fields)
 	end
 end
 
-function widgets.InventoryTiles(fields)
+function sway_widgets.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
 	end
@@ -108,7 +108,7 @@ function widgets.InventoryTiles(fields)
 	}
 end
 
-function widgets.Form(fields)
+function sway_widgets.Form(fields)
 	local player = fields.player
 	local context = fields.context
 	local show_inv = fields.show_inv
@@ -132,12 +132,12 @@ function widgets.Form(fields)
 
 	return gui.VBox{
 		padding = 0,
-		gui.sway.NavGui({
+		gui.sway.NavGui{
 			player = player,
 			context = context,
 			nav_titles = context.nav_titles,
 			current_idx = context.nav_idx
-		}),
+		},
 		gui.VBox(fields)
 	}
 end
@@ -157,7 +157,7 @@ function sway.get_form(player, context)
 	local nav = {}
 	local nav_ids = {}
 	local current_idx = 1
-	for i, pdef in pairs(sway.pages_unordered) do
+	for _, pdef in pairs(sway.pages_unordered) do
 		if not pdef.is_in_nav or pdef:is_in_nav(player, context) then
 			nav[#nav + 1] = pdef.title
 			nav_ids[#nav_ids + 1] = pdef.name
