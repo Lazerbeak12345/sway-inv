@@ -110,9 +110,13 @@ end
 
 function sway_widgets.Form(fields)
 	local player = fields.player
+	fields.player = nil
 	local context = fields.context
+	fields.context = nil
 	local show_inv = fields.show_inv
+	fields.show_inv = nil
 	local size = fields.size
+	fields.size = nil
 
 	if size then
 		assert(type(size) == "table", "size must be table")
