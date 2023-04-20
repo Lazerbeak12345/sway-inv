@@ -1,11 +1,10 @@
-sway = {
-	pages = {},
-	pages_unordered = {},
-	contexts = {},
-	widgets = {},
-	mods = { sway = { widgets = {} } },
-	enabled = true
-}
+local minetest, dump, flow, sway = minetest, dump, flow, sway
+sway.pages = {}
+sway.pages_unordered = {}
+sway.contexts = {}
+sway.widgets = {}
+sway.mods = { sway = { widgets = {} } }
+sway.enabled = true
 local sway_widgets = sway.mods.sway.widgets
 -- TODO make into function so children still depend directly on flow
 local widgets_metatable = {}
@@ -146,7 +145,7 @@ function sway_widgets.Form(fields)
 	}
 end
 
-function sway.get_homepage_name(player)
+function sway.get_homepage_name(_)
 	return "sway:crafting"
 end
 
