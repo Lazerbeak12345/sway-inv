@@ -22,7 +22,6 @@ function widgets_metatable.__newindex() end
 setmetatable(sway.widgets, widgets_metatable)
 
 local gui = sway.widgets
-local gui_nil = gui.Spacer{expand=false}
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
@@ -65,7 +64,7 @@ function sway_widgets.NavGui(fields)
 			on_event = sway.get_nav_gui_tabevent
 		}
 	else
-		return gui_nil
+		return gui.Nil{}
 	end
 end
 
@@ -103,7 +102,7 @@ function sway_widgets.InventoryTiles(fields)
 			w = w,
 			h = h - 1,
 			starting_item_index = w
-		} or gui_nil
+		} or gui.Nil{}
 	}
 end
 
@@ -185,7 +184,7 @@ function sway.get_form(player, context)
 			minetest.log("error", "[sway] Couldn't find " .. dump(old_page) ..
 					", which is also the old page")
 
-			return gui_nil
+			return gui.Nil{}
 		end
 
 		minetest.log("warning", "[sway] Couldn't find " .. dump(old_page) ..
