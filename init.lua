@@ -33,9 +33,3 @@ local modpath = minetest.get_modpath("sway")
 sway = {}
 dofile(modpath .. "/api.lua")
 dofile(modpath .. "/crafting.lua")
-
---[[ Retain apis
-if minetest.global_exists("sfinv") then
-	sway._sfinv_upstream = sfinv
-	sfinv = sway
-end]]
