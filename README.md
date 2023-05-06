@@ -12,8 +12,8 @@
                                      \/__/
 ```
 
-<!-- Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
-official figlet "contributed" collection. `pepper` from the same collection was a close 2nd. -->
+> Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
+> official figlet "contributed" collection. `pepper` from the same collection was a close 2nd.
 
 > Lots of changes underway! Not ready yet.
 > 
