@@ -5,7 +5,6 @@ sway.contexts = {}
 sway.widgets = {}
 sway.mods = { sway = { widgets = {} } }
 sway.enabled = true
-local sway_widgets = sway.mods.sway.widgets
 -- TODO make into function so children still depend directly on flow
 local widgets_metatable = {}
 function widgets_metatable:__index(key)
@@ -48,7 +47,7 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
-function sway_widgets.NavGui(fields)
+function gui.sway.NavGui(fields)
 	-- local player = fields.player
 	-- local context = fields.context
 	local nav_titles = fields.nav_titles
@@ -68,7 +67,7 @@ function sway_widgets.NavGui(fields)
 	end
 end
 
-function sway_widgets.InventoryTiles(fields)
+function gui.sway.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
 	end
@@ -106,7 +105,7 @@ function sway_widgets.InventoryTiles(fields)
 	}
 end
 
-function sway_widgets.Form(fields)
+function gui.sway.Form(fields)
 	local player = fields.player
 	fields.player = nil
 	local context = fields.context
