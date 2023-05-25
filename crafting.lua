@@ -7,12 +7,14 @@ local gui = sway.widgets
 
 sway.register_page("sway:crafting", {
 	title = S("Crafting"),
-	get = function(_, player, context)
+	-- Replace this function to modify crafting page
+	filter = function (_, _, _, elm) return elm end,
+	get = function(self, player, context)
 		return gui.sway.Form{
 			player = player,
 			context = context,
 			show_inv = true,
-			gui.HBox{
+			self.filter(self, player, context, gui.HBox{
 				align_h = "center",
 				gui.List{
 					inventory_location = "current_player",
@@ -36,7 +38,7 @@ sway.register_page("sway:crafting", {
 					inventory_location = "current_player",
 					list_name = "craft"
 				}
-			}
+			})
 		}
 	end
 })
