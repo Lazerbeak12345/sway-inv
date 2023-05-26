@@ -80,7 +80,7 @@ function gui.sway.InventoryTiles(fields)
 		spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
 	}
 	for _=1, w do
-		hotbar_row[#hotbar_row+1] = gui.Image{ w = 1, h = 1, texture_name = "gui_hb_bg.png" }
+		hotbar_row[#hotbar_row+1] = gui.Image{ w = 1, h = 1, texture_name = "sway_hb_bg.png" }
 	end
 	return gui.VBox{
 		align_v = "end",

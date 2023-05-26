@@ -52,9 +52,12 @@ A cleaner, simpler solution to having an advanced inventory in Minetest.
 
 Written by rubenwardy.\\
 Modified by Lazerbeak12345 for flow.\\
-License: MIT
+Code License: MIT
 
-* sway_crafting_arrow.png - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
+* `sway_crafting_arrow.png` - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
+* `sway_hb_bg.png` - renamed from gui_hb_bg.png, a texture by BlockMen (CC BY-SA 3.0)
+
+<!--TODO Include CC BY-SA 3.0 licence text-->
 
 ## API
 
