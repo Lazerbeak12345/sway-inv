@@ -47,6 +47,97 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
+local function ThemableList(fields)
+	local spacing = 0.25
+	local col = gui.VBox{ spacing = spacing }
+	local bgimg = fields.bgimg or { "sway_list_bg.png" }
+	if type(bgimg) ~= "table" then
+		bgimg = { bgimg }
+	end
+	local bgimg_idx = 1
+	for _=1, fields.h do
+		local row = gui.HBox{ spacing = spacing }
+		for _=1, fields.w do
+			row[#row+1] = gui.Image{ w = 1, h = 1, bgimg = bgimg[bgimg_idx] }
+			bgimg_idx = bgimg_idx + 1
+			if bgimg_idx >= #bgimg then
+				bgimg_idx = 1
+			end
+		end
+		col[#col+1] = row
+	end
+	return gui.Stack{
+		align_h = "center",
+		align_v = "center",
+		gui.StyleType{
+			selectors = { "list" },
+			props = {
+				spacing = spacing
+			}
+		},
+		col,
+		gui.List(fields)
+	}
+end
+
+function gui.sway.List(fields)
+	local inventory_location = fields.inventory_location
+	local list_name = fields.list_name
+	local w = fields.w
+	local h = fields.h
+	local starting_item_index = fields.starting_item_index
+	local remainder = fields.remainder
+	local remainder_v = fields.remainder_v
+	local remainder_align = fields.remainder_align
+	local listring = fields.listring or {}
+	local bgimg = fields.bgimg
+	local align_h = fields.align_h
+	local align_v = fields.align_v
+	local wrapper = {
+		type = remainder_v and "vbox" or "hbox",
+		align_h = align_h,
+		align_v = align_v,
+		ThemableList{
+			inventory_location = inventory_location,
+			list_name = list_name,
+			w = w, h = h,
+			starting_item_index = starting_item_index,
+			bgimg = bgimg
+		},
+		(remainder and remainder > 0) and (
+			remainder_v and gui.HBox{
+				align_h = remainder_align,
+				ThemableList{
+					inventory_location = inventory_location,
+					list_name = list_name,
+					w = remainder, h = 1,
+					starting_item_index = (w * h) + (starting_item_index or 0),
+					bgimg = bgimg
+				}
+			} or gui.VBox{
+				align_v = remainder_align,
+				ThemableList{
+					inventory_location = inventory_location,
+					list_name = list_name,
+					w = 1, h = remainder,
+					starting_item_index = (w * h) + (starting_item_index or 0),
+					bgimg = bgimg
+				}
+			}
+		) or gui.Nil{}
+	}
+	if #listring > 0 then
+		wrapper[#wrapper+1] = gui.Listring{
+			inventory_location = inventory_location,
+			list_name = list_name
+		}
+	end
+	for _, item in ipairs(listring) do
+		wrapper[#wrapper+1] = gui.Listring(item)
+	end
+	return wrapper
+end
+
 function gui.sway.NavGui(fields)
 	-- local player = fields.player
 	-- local context = fields.context
@@ -75,27 +166,19 @@ function gui.sway.InventoryTiles(fields)
 	-- local context = fields.context
 	local w = fields.w or 8
 	local h = fields.h or 4
-	-- N horizontal images
-	local hotbar_row = {
-		spacing = 0.25, -- Off by less than a pixel on most aspect ratios I tried, but some will be off by quite a bit.
-	}
-	for _=1, w do
-		hotbar_row[#hotbar_row+1] = gui.Image{ w = 1, h = 1, texture_name = "sway_hb_bg.png" }
-	end
 	return gui.VBox{
 		align_v = "end",
 		expand = true,
-		gui.Stack{
+		gui.sway.List{
 			align_h = "center",
-			gui.HBox(hotbar_row),
-			gui.List{
-				inventory_location = "current_player",
-				list_name = "main",
-				w = w,
-				h = 1,
-			}
+			inventory_location = "current_player",
+			list_name = "main",
+			w = w,
+			h = 1,
+			bgimg = "sway_hb_bg.png"
 		},
-		h > 1 and gui.List{
+		h > 1 and gui.sway.List{
+			align_h = "center",
 			inventory_location = "current_player",
 			list_name = "main",
 			w = w,

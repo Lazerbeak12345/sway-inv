@@ -23,27 +23,23 @@ sway.register_page("sway:crafting", {
 			show_inv = true,
 			self.filter(self, player, context, gui.HBox{
 				align_h = "center",
-				gui.List{
+				gui.sway.List{
 					inventory_location = "current_player",
 					list_name = "craft",
-					w = 3, h = 3
+					w = 3, h = 3,
+					listring = { {
+						inventory_location = "current_player",
+						list_name = "main"
+					} }
 				},
 				gui.Image{
 					w = 1, h = 1,
 					texture_name = "sway_crafting_arrow.png"
 				},
-				gui.List{
+				gui.sway.List{
 					inventory_location = "current_player",
 					list_name = "craftpreview",
 					w = 1, h = 1
-				},
-				gui.Listring{
-					inventory_location = "current_player",
-					list_name = "main"
-				},
-				gui.Listring{
-					inventory_location = "current_player",
-					list_name = "craft"
 				}
 			})
 		}
