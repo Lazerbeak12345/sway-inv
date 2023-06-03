@@ -187,7 +187,10 @@ function gui.sway.InventoryTiles(fields)
 		} or gui.Nil{}
 	}
 end
-
+function sway.insert_prepend(widget)
+	widget.no_prepend = true -- Hide the default background.
+	widget.bgcolor = "#0000"
+end
 function gui.sway.Form(fields)
 	local player = fields.player
 	fields.player = nil
@@ -215,6 +218,8 @@ function gui.sway.Form(fields)
 	end
 
 	return gui.VBox{
+		bgimg = "sway_bg_full.png",
+		bgimg_middle = 12, -- Number of pixels from each edge.
 		padding = 0,
 		gui.sway.NavGui{
 			player = player,
@@ -232,6 +237,9 @@ end
 
 sway.form = flow.make_gui(function (player, ctx)
 	local form = sway.get_form(player, ctx)
+	if form.no_prepend then
+		sway.insert_prepend(form)
+	end
 	sway.set_context(player, ctx)
 	return form
 end)

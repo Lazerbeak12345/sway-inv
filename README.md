@@ -55,7 +55,8 @@ Modified by Lazerbeak12345 for flow.\\
 Code License: MIT
 
 * `sway_crafting_arrow.png` - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
-* `sway_hb_bg.png` - renamed from gui_hb_bg.png, a texture by BlockMen (CC BY-SA 3.0)
+* `sway_hb_bg.png` - renamed from `gui_hb_bg.png`, a texture by BlockMen (CC BY-SA 3.0)
+* `sway_bg_full.png` - renamed from `i3_bg_full.png`, a texture by paramat (CC BY-SA 3.0)
 
 <!--TODO Include CC BY-SA 3.0 licence text-->
 
