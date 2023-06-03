@@ -237,7 +237,7 @@ end
 
 sway.form = flow.make_gui(function (player, ctx)
 	local form = sway.get_form(player, ctx)
-	if form.no_prepend then
+	if not form.no_prepend then
 		sway.insert_prepend(form)
 	end
 	sway.set_context(player, ctx)
