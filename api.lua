@@ -47,34 +47,25 @@ function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
 end
 
+local spacing = 0.25 -- TODO
 local function ThemableList(fields)
-	local spacing = 0.25
 	local col = gui.VBox{ spacing = spacing }
 	local bgimg = fields.bgimg or { "sway_list_bg.png" }
 	if type(bgimg) ~= "table" then
 		bgimg = { bgimg }
 	end
-	local bgimg_idx = 1
+	local bgimg_idx = 1 + (fields.starting_item_index or 0)
 	for _=1, fields.h do
 		local row = gui.HBox{ spacing = spacing }
 		for _=1, fields.w do
 			row[#row+1] = gui.Image{ w = 1, h = 1, bgimg = bgimg[bgimg_idx] }
-			bgimg_idx = bgimg_idx + 1
-			if bgimg_idx >= #bgimg then
-				bgimg_idx = 1
-			end
+			bgimg_idx = math.fmod(bgimg_idx + 1, #bgimg)
 		end
 		col[#col+1] = row
 	end
 	return gui.Stack{
 		align_h = "center",
 		align_v = "center",
-		gui.StyleType{
-			selectors = { "list" },
-			props = {
-				spacing = spacing
-			}
-		},
 		col,
 		gui.List(fields)
 	}
@@ -190,6 +181,7 @@ end
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"
+	table.insert(gui, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
 end
 function gui.sway.Form(fields)
 	local player = fields.player
