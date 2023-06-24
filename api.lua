@@ -2,25 +2,9 @@ local minetest, dump, flow, sway = minetest, dump, flow, sway
 sway.pages = {}
 sway.pages_unordered = {}
 sway.contexts = {}
-sway.widgets = {}
-sway.mods = { sway = { widgets = {} } }
 sway.enabled = true
--- TODO make into function so children still depend directly on flow
-local widgets_metatable = {}
-function widgets_metatable:__index(key)
-	local value
-	if sway.mods[key] and sway.mods[key].widgets then
-		value = sway.mods[key].widgets
-	else
-		value = flow.widgets[key]
-	end
-	rawset(self, key, value)
-	return value
-end
-function widgets_metatable.__newindex() end
-setmetatable(sway.widgets, widgets_metatable)
-
-local gui = sway.widgets
+sway.widgets = {}
+local gui = flow.widgets
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
@@ -71,7 +55,7 @@ local function ThemableList(fields)
 	}
 end
 
-function gui.sway.List(fields)
+function sway.List(fields)
 	local inventory_location = fields.inventory_location
 	local list_name = fields.list_name
 	local w = fields.w
@@ -129,7 +113,7 @@ function gui.sway.List(fields)
 	return wrapper
 end
 
-function gui.sway.NavGui(fields)
+function sway.NavGui(fields)
 	-- local player = fields.player
 	-- local context = fields.context
 	local nav_titles = fields.nav_titles
@@ -149,7 +133,7 @@ function gui.sway.NavGui(fields)
 	end
 end
 
-function gui.sway.InventoryTiles(fields)
+function sway.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
 	end
@@ -160,7 +144,7 @@ function gui.sway.InventoryTiles(fields)
 	return gui.VBox{
 		align_v = "end",
 		expand = true,
-		gui.sway.List{
+		sway.List{
 			align_h = "center",
 			inventory_location = "current_player",
 			list_name = "main",
@@ -168,7 +152,7 @@ function gui.sway.InventoryTiles(fields)
 			h = 1,
 			bgimg = "sway_hb_bg.png"
 		},
-		h > 1 and gui.sway.List{
+		h > 1 and sway.List{
 			align_h = "center",
 			inventory_location = "current_player",
 			list_name = "main",
@@ -183,7 +167,7 @@ function sway.insert_prepend(widget)
 	widget.bgcolor = "#0000"
 	table.insert(gui, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
 end
-function gui.sway.Form(fields)
+function sway.Form(fields)
 	local player = fields.player
 	fields.player = nil
 	local context = fields.context
@@ -206,14 +190,14 @@ function gui.sway.Form(fields)
 	fields.min_h = actual_size.h
 	fields.padding = .4
 	if show_inv then
-		fields[#fields+1] = gui.sway.InventoryTiles()
+		fields[#fields+1] = sway.InventoryTiles()
 	end
 
 	return gui.VBox{
 		bgimg = "sway_bg_full.png",
 		bgimg_middle = 12, -- Number of pixels from each edge.
 		padding = 0,
-		gui.sway.NavGui{
+		sway.NavGui{
 			player = player,
 			context = context,
 			nav_titles = context.nav_titles,
