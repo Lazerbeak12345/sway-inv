@@ -1,4 +1,4 @@
-local minetest, dump, flow, sway = minetest, dump, flow, sway
+local minetest, dump, flow, sway, flow_extras = minetest, dump, flow, sway, flow_extras
 sway.pages = {}
 sway.pages_unordered = {}
 sway.contexts = {}
@@ -29,88 +29,6 @@ end
 
 function sway.get_nav_gui_tabevent(player, context)
 	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
-end
-
-local spacing = 0.25 -- TODO
-local function ThemableList(fields)
-	local col = gui.VBox{ spacing = spacing }
-	local bgimg = fields.bgimg or { "sway_list_bg.png" }
-	if type(bgimg) ~= "table" then
-		bgimg = { bgimg }
-	end
-	local bgimg_idx = 1 + (fields.starting_item_index or 0)
-	for _=1, fields.h do
-		local row = gui.HBox{ spacing = spacing }
-		for _=1, fields.w do
-			row[#row+1] = gui.Image{ w = 1, h = 1, bgimg = bgimg[bgimg_idx] }
-			bgimg_idx = math.fmod(bgimg_idx + 1, #bgimg)
-		end
-		col[#col+1] = row
-	end
-	return gui.Stack{
-		align_h = "center",
-		align_v = "center",
-		col,
-		gui.List(fields)
-	}
-end
-
-function sway.List(fields)
-	local inventory_location = fields.inventory_location
-	local list_name = fields.list_name
-	local w = fields.w
-	local h = fields.h
-	local starting_item_index = fields.starting_item_index
-	local remainder = fields.remainder
-	local remainder_v = fields.remainder_v
-	local remainder_align = fields.remainder_align
-	local listring = fields.listring or {}
-	local bgimg = fields.bgimg
-	local align_h = fields.align_h
-	local align_v = fields.align_v
-	local wrapper = {
-		type = remainder_v and "vbox" or "hbox",
-		align_h = align_h,
-		align_v = align_v,
-		ThemableList{
-			inventory_location = inventory_location,
-			list_name = list_name,
-			w = w, h = h,
-			starting_item_index = starting_item_index,
-			bgimg = bgimg
-		},
-		(remainder and remainder > 0) and (
-			remainder_v and gui.HBox{
-				align_h = remainder_align,
-				ThemableList{
-					inventory_location = inventory_location,
-					list_name = list_name,
-					w = remainder, h = 1,
-					starting_item_index = (w * h) + (starting_item_index or 0),
-					bgimg = bgimg
-				}
-			} or gui.VBox{
-				align_v = remainder_align,
-				ThemableList{
-					inventory_location = inventory_location,
-					list_name = list_name,
-					w = 1, h = remainder,
-					starting_item_index = (w * h) + (starting_item_index or 0),
-					bgimg = bgimg
-				}
-			}
-		) or gui.Nil{}
-	}
-	if #listring > 0 then
-		wrapper[#wrapper+1] = gui.Listring{
-			inventory_location = inventory_location,
-			list_name = list_name
-		}
-	end
-	for _, item in ipairs(listring) do
-		wrapper[#wrapper+1] = gui.Listring(item)
-	end
-	return wrapper
 end
 
 function sway.NavGui(fields)
@@ -144,7 +62,7 @@ function sway.InventoryTiles(fields)
 	return gui.VBox{
 		align_v = "end",
 		expand = true,
-		sway.List{
+		flow_extras.List{
 			align_h = "center",
 			inventory_location = "current_player",
 			list_name = "main",
@@ -152,7 +70,7 @@ function sway.InventoryTiles(fields)
 			h = 1,
 			bgimg = "sway_hb_bg.png"
 		},
-		h > 1 and sway.List{
+		h > 1 and flow_extras.List{
 			align_h = "center",
 			inventory_location = "current_player",
 			list_name = "main",
@@ -162,6 +80,7 @@ function sway.InventoryTiles(fields)
 		} or gui.Nil{}
 	}
 end
+local spacing = 0.25 -- TODO
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"

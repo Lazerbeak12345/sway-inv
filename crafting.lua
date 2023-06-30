@@ -1,4 +1,4 @@
-local minetest, sway, flow = minetest, sway, flow
+local minetest, sway, flow, flow_extras = minetest, sway, flow, flow_extras
 
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
@@ -23,14 +23,14 @@ sway.register_page("sway:crafting", {
 			show_inv = true,
 			self.filter(self, player, context, gui.HBox{
 				align_h = "center",
-				sway.List{
+				flow_extras.List{
 					inventory_location = "current_player",
 					list_name = "craft",
 					w = 3, h = 3,
 					listring = { { inventory_location = "current_player", list_name = "main" } }
 				},
 				gui.Image{ w = 1, h = 1, texture_name = "sway_crafting_arrow.png" },
-				sway.List{ inventory_location = "current_player", list_name = "craftpreview", w = 1, h = 1 }
+				flow_extras.List{ inventory_location = "current_player", list_name = "craftpreview", w = 1, h = 1 }
 			})
 		}
 	end
