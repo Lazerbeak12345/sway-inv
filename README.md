@@ -73,21 +73,19 @@ Based on sfinv, but not compatible with sfinv.
 * sway.register_page(name, def) - register a page, see section below
 * sway.override_page(name, def) - overrides fields of an page registered with register_page.
     * Note: Page must already be defined, (opt)depend on the mod defining it.
-* sway.set_player_inventory_formspec(player) - (re)builds page formspec
+* sway.set_player_inventory_formspec(player, context) - (re)builds page formspec with optional context defalting to a new context. See sway.get_or_create_context
 
 **Contexts**
-
-> Might be deprecated in the future
 
 * sway.get_or_create_context(player) - gets the player's context
 * sway.set_context(player, context)
 
 **Theming**
 
-* sway.make_form(player, context, content, show_inv, size) - adds a theme to a form
+* sway.Form{ player = [player], context = [context], content = [form content], show_inv = [boolean], size = [size info] } - adds a theme to a form
     * show_inv, defaults to false. Whether to show the player's main inventory
     * size, defaults to `{ w = 8, h = 8.6 }` if not specified
-* sway.get_nav(player, context, nav, current_idx) - creates tabheader or returns a spacer that is 0 by 0 and doesn't expand.
+* sway.NavGui{ player = [player], context = [context], nav_titles = [list of tab labels], current_idx = [number]) - creates tabheader or returns gui.Nil{} from flow
 
 ### sway Members
 
@@ -122,10 +120,14 @@ def is a table containing:
 
 ### get formspec
 
-Use sfinv.make_form to apply a layout:
+Use sway.Form to apply a layout:
 
     local gui = flow.widgets
-	return sfinv.make_form(player, context, gui.HBox{
+	return sway.Form{
+      player = player,
+      context = context,
+      show_inv = true,
+      gui.HBox{
 			align_h = "center",
 			gui.List{
 				inventory_location = "current_player",
@@ -149,7 +151,8 @@ Use sfinv.make_form to apply a layout:
 				inventory_location = "current_player",
 				list_name = "craft"
 			}
-    }, true)
+      }
+    }
 
 See above (methods section) for more options.
 
@@ -158,22 +161,22 @@ See above (methods section) for more options.
 Simply override this function to change the navigation:
 
     local gui = flow.widgets
-	function sfinv.get_nav_gui(player, context, nav_titles, current_idx)
+	function sway.NavGui(fields)
+        local player, context, nav_titles, current_idx = fields.player, fields.context, fields.nav_titles, fields.current_idx
 		return gui.Label{ label = "nav gui" }
 	end
 
-And override this function to change the layout:
+And override this function to change the layout (not the actual code, see api.lua for that):
 
-	function sfinv.make_form(player, context, content, show_inv, size)
+	function sway.Form(fields)
+      local player, context, content, show_inv, size = fields.player, fields.context, fields.content, fields.show_inv, fields.size
       return gui.VBox{
-          padding = 0,
-          sway.get_nav_gui(player, context, context.nav_titles, context.nav_idx),
-          gui.VBox{
-              min_w = size.w,
-              min_h = size.h,
-              padding = .3,
-              content,
-              (show_inv and theme_inv or gui.Spacer{expand=false}),
-          }
+          sway.NavGui{
+              player = player,
+              context = context,
+              nav_titles = context.nav_titles,
+              current_idx = context.nav_idx
+          },
+          gui.VBox(fields)
       }
 	end
