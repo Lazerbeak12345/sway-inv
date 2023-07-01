@@ -46,7 +46,7 @@ Everything below is subject to become outdated until I reach my minimum goals.
 
 ---
 
-![SFINV Screeny](screenshot.png)
+![Sway Screenshot](screenshot.png)
 
 A cleaner, simpler solution to having an advanced inventory in Minetest.
 
