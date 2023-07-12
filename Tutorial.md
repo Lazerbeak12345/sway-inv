@@ -1,19 +1,20 @@
-# SFINV Tutorial
+# Sway Tutorial
 
 Everything below is subject to become outdated until I reach my minimum goals. See README.md
 
 ---
 
-## Introduction <!-- omit in toc -->
+## Introduction
+<!-- TODO omit in toc -->
 
-Simple Fast Inventory (SFINV) is a mod found in Minetest Game that is used to
-create the player's inventory formspec. SFINV comes with
+Sway is a mod found in Minetest Game that is used to create the player's
+inventory formspec. It's based upon the earlier SFINV mod, but doesn't have a
+compatible API due to it's use of a more modern widget toolkit. Sway comes with
 an API that allows you to add and otherwise manage the pages shown.
 
-Whilst SFINV by default shows pages as tabs, pages are called pages
-because it is entirely possible that a mod or game decides to show them in
-some other format instead.
-For example, multiple pages could be shown in one formspec.
+Whilst Sway by default shows pages as tabs, pages are called pages because it
+is entirely possible that a mod or game decides to show them in some other
+format instead. For example, multiple pages could be shown in one form.
 
 - [Registering a Page](#registering-a-page)
 - [Receiving events](#receiving-events)
