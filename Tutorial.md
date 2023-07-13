@@ -24,21 +24,26 @@ format instead. For example, multiple pages could be shown in one form.
 
 ## Registering a Page
 
-SFINV provides the aptly named `sfinv.register_page` function to create pages.
+Sway provides the aptly named `sway.register_page` function to create pages.
 Simply call the function with the page's name and its definition:
 
 ```lua
-sfinv.register_page("mymod:hello", {
+local gui = flow.widgets
+sway.register_page("mymod:hello", {
     title = "Hello!",
     get = function(self, player, context)
-        return sfinv.make_formspec(player, context,
-                "label[0.1,0.1;Hello world!]", true)
+        return sway.Form{
+            player = player,
+            context = context,
+			show_inv = true,
+            gui.Label{ label = "Hello world!" }
+        }
     end
 })
 ```
 
-The `make_formspec` function surrounds your formspec with SFINV's formspec code.
-The fourth parameter, currently set as `true`, determines whether the
+The `sway.Form` function surrounds your formspec with Sway's formspec code.
+The `show_inv` parameter, currently set as `true`, determines whether the
 player's inventory is shown.
 
 Let's make things more exciting; here is the code for the formspec generation
@@ -46,45 +51,52 @@ part of a player admin tab. This tab will allow admins to kick or ban players by
 selecting them in a list and clicking a button.
 
 ```lua
-sfinv.register_page("myadmin:myadmin", {
+sway.register_page("myadmin:myadmin", {
     title = "Tab",
     get = function(self, player, context)
         local players = {}
         context.myadmin_players = players
-
-        -- Using an array to build a formspec is considerably faster
-        local formspec = {
-            "textlist[0.1,0.1;7.8,3;playerlist;"
-        }
-
         -- Add all players to the text list, and to the players list
         local is_first = true
+        local playerlist = {}
         for _ , player in pairs(minetest.get_connected_players()) do
             local player_name = player:get_player_name()
             players[#players + 1] = player_name
             if not is_first then
-                formspec[#formspec + 1] = ","
+                playerlist[#playerlist + 1] = ","
             end
-            formspec[#formspec + 1] =
+            playerlist[#playerlist + 1] =
                     minetest.formspec_escape(player_name)
             is_first = false
         end
         formspec[#formspec + 1] = "]"
-
-        -- Add buttons
-        formspec[#formspec + 1] = "button[0.1,3.3;2,1;kick;Kick]"
-        formspec[#formspec + 1] = "button[2.1,3.3;2,1;ban;Kick + Ban]"
-
-        -- Wrap the formspec in sfinv's layout
-        -- (ie: adds the tabs and background)
-        return sfinv.make_formspec(player, context,
-                table.concat(formspec, ""), false)
+        return sway.Form{
+            player = player,
+            context = context,
+            show_inv = false,
+            -- sway.Form puts all of its children into a gui.VBox.
+            -- This is the first child
+            gui.Textlist{
+                w = 7.8,
+                h = 3,
+                name = "playerlist",
+                -- TODO listelms should be a list but flow expects a string. See https://gitlab.com/luk3yx/minetest-formspec_ast/-/issues/2
+                listelms = playerlist
+            },
+            -- And this HBox is the second row.
+            -- This way we'll have a horizontal row of buttons
+            gui.HBox{
+                gui.Button{ label = "Kick" },
+                gui.Button{ label = "Kick + Ban" }
+            }
+        }
     end,
 })
 ```
 
 There's nothing new about the above code; all the concepts are
-covered above and in previous chapters.
+covered above, in the documentation for `flow`, Formspec AST or minetest
+itself.
 
 ## Receiving events
 
