@@ -56,18 +56,8 @@ sway.register_page("myadmin:myadmin", {
     get = function(self, player, context)
         local players = {}
         context.myadmin_players = players
-        -- Add all players to the text list, and to the players list
-        local is_first = true
-        local playerlist = {}
         for _ , player in pairs(minetest.get_connected_players()) do
-            local player_name = player:get_player_name()
-            players[#players + 1] = player_name
-            if not is_first then
-                playerlist[#playerlist + 1] = ","
-            end
-            playerlist[#playerlist + 1] =
-                    minetest.formspec_escape(player_name)
-            is_first = false
+            players[#players + 1] = player:get_player_name()
         end
         formspec[#formspec + 1] = "]"
         return sway.Form{
@@ -76,13 +66,7 @@ sway.register_page("myadmin:myadmin", {
             show_inv = false,
             -- sway.Form puts all of its children into a gui.VBox.
             -- This is the first child
-            gui.Textlist{
-                w = 7.8,
-                h = 3,
-                name = "playerlist",
-                -- TODO listelms should be a list but flow expects a string. See https://gitlab.com/luk3yx/minetest-formspec_ast/-/issues/2
-                listelms = playerlist
-            },
+            gui.Textlist{ w = 7.8, h = 3, name = "playerlist", listelms = players },
             -- And this HBox is the second row.
             -- This way we'll have a horizontal row of buttons
             gui.HBox{
