@@ -102,10 +102,6 @@ callback.
 Now let's implement the `on_event` functions for our admin mod:
 
 ```lua
-gui.Textlist{
-    w = 7.8, h = 3, name = "playerlist", listelms = players
-    index_event = true -- Put this into the context when they index things
-},
 gui.HBox{
     gui.Button{
         label = "Kick"
