@@ -59,7 +59,6 @@ sway.register_page("myadmin:myadmin", {
         for _ , player in pairs(minetest.get_connected_players()) do
             players[#players + 1] = player:get_player_name()
         end
-        formspec[#formspec + 1] = "]"
         return sway.Form{
             player = player,
             context = context,
