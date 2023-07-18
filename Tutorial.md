@@ -83,59 +83,59 @@ itself.
 
 ## Receiving events
 
-You can receive formspec events by adding a `on_player_receive_fields` function
-to a sfinv definition.
+You can receive form events just as you would in flow.
 
 ```lua
-on_player_receive_fields = function(self, player, context, fields)
-    -- TODO: implement this
-end,
+gui.Button{
+    label = "Lorem ipsum",
+    on_event = function(player, context)
+        -- TODO: implement this
+    end,
+}
 ```
 
-`on_player_receive_fields` works the same as
-`minetest.register_on_player_receive_fields`, except that `context` is
-given instead of `formname`.
-Please note that SFINV will consume events relevant to itself, such as
-navigation tab events, so you won't receive them in this callback.
+As in most flow forms, event callbacks are only triggered when an event happens
+to that particular element. This means Sway will consume events relevant to
+itself, such as navigation tab events, so you won't receive them in this
+callback.
 
-Now let's implement the `on_player_receive_fields` for our admin mod:
+Now let's implement the `on_event` functions for our admin mod:
 
 ```lua
-on_player_receive_fields = function(self, player, context, fields)
-    -- text list event,  check event type and set index if selection changed
-    if fields.playerlist then
-        local event = minetest.explode_textlist_event(fields.playerlist)
-        if event.type == "CHG" then
-            context.myadmin_selected_idx = event.index
+gui.Textlist{
+    w = 7.8, h = 3, name = "playerlist", listelms = players
+    index_event = true -- Put this into the context when they index things
+},
+gui.HBox{
+    gui.Button{
+        label = "Kick"
+        on_event = function(player, context)
+            local player_name = context.myadmin_players[context.form.playerlist]
+            if player_name then
+                minetest.chat_send_player(player:get_player_name(),
+                        "Kicked " .. player_name)
+                minetest.kick_player(player_name)
+            end
         end
-
-    -- Kick button was pressed
-    elseif fields.kick then
-        local player_name =
-                context.myadmin_players[context.myadmin_selected_idx]
-        if player_name then
-            minetest.chat_send_player(player:get_player_name(),
-                    "Kicked " .. player_name)
-            minetest.kick_player(player_name)
+    },
+    gui.Button{
+        label = "Kick + Ban"
+        on_event = function(player, context)
+            local player_name = context.myadmin_players[context.form.playerlist]
+            if player_name then
+                minetest.chat_send_player(player:get_player_name(),
+                        "Banned " .. player_name)
+                minetest.ban_player(player_name)
+                minetest.kick_player(player_name, "Banned")
+            end
         end
-
-    -- Ban button was pressed
-    elseif fields.ban then
-        local player_name =
-                context.myadmin_players[context.myadmin_selected_idx]
-        if player_name then
-            minetest.chat_send_player(player:get_player_name(),
-                    "Banned " .. player_name)
-            minetest.ban_player(player_name)
-            minetest.kick_player(player_name, "Banned")
-        end
-    end
-end,
+    }
+}
 ```
 
 There's a rather large problem with this, however. Anyone can kick or ban players! You
 need a way to only show this to players with the kick or ban privileges.
-Luckily SFINV allows you to do this!
+Luckily Sway allows you to do this!
 
 ## Conditionally showing to players
 
