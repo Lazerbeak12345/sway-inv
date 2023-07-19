@@ -152,9 +152,9 @@ Note that the `is_in_nav` is only called when the player's inventory formspec is
 generated. This happens when a player joins the game, switches tabs, or a mod
 requests for SFINV to regenerate.
 
-This means that you need to manually request that SFINV regenerates the inventory
-formspec on any events that may change `is_in_nav`'s result. In our case,
-we need to do that whenever kick or ban is granted or revoked to a player:
+This means that you need to manually request that Sway regenerates the inventory
+formspec on any events that may change `is_in_nav`'s result. In our case, we
+need to do that whenever kick or ban is granted or revoked to a player:
 
 ```lua
 local function on_grant_revoke(grantee, granter, priv)
@@ -167,12 +167,12 @@ local function on_grant_revoke(grantee, granter, priv)
         return
     end
 
-    local context = sfinv.get_or_create_context(player)
+    local context = sway.get_or_create_context(player)
     if context.page ~= "myadmin:myadmin" then
         return
     end
 
-    sfinv.set_player_inventory_formspec(player, context)
+    sway.set_player_inventory_formspec(player, context)
 end
 
 minetest.register_on_priv_grant(on_grant_revoke)
