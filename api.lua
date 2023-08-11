@@ -18,6 +18,7 @@ function sway.register_page(name, def)
 end
 
 function sway.override_page(name, def)
+	minetest.log("action", "overriding page " .. name)
 	assert(name, "Invalid sway page override. Requires a name")
 	assert(def, "Invalid sway page override. Requires a def[inition] table")
 	local page = sway.pages[name]
