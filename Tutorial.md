@@ -209,20 +209,46 @@ end,
 To add content to an existing page, you will need to override the page
 and modify the returned formspec.
 
+I reccomend making use of `flow_extras`' `flow_extras.search` function to insert
+things where they go. Because you're modifying a tree strucure that other mods
+might also choose to modify, be sure to add any mods that you would like to
+play nice with into your `mod.conf` file, when appropriate. This will tell
+Minetest that they should run first.
+
 ```lua
-local old_func = sfinv.registered_pages["sfinv:crafting"].get
-sfinv.override_page("sfinv:crafting", {
+local old_func = sway.registered_pages["sway:crafting"].get
+sway.override_page("sway:crafting", {
     get = function(self, player, context, ...)
         local ret = old_func(self, player, context, ...)
 
-        if type(ret) == "table" then
-            ret.formspec = ret.formspec .. "label[0,0;Hello]"
-        else
-            -- Backwards compatibility
-            ret = ret .. "label[0,0;Hello]"
+        -- Don't forget to add `flow_extras` as a dependancy in mod.conf too!
+        for content_box in flow_extras.search{
+            tree = ret,
+            key = "name",
+            value = "content"
+        } do
+            -- Since content_box is an element, and all elements are tables, we
+            -- can add a child like so:
+            content_box[#content_box+1] = gui.Label{ label = "Hello" }
+            -- Since `search` found the element we were looking for, we can tell
+            -- it to stop searching.
+            break
         end
 
         return ret
     end
 })
+```
+
+You can simplify that loop down to this, since that code was only getting the first item:
+
+```lua
+        --- ...
+        local content_box = flow_extras.search{
+            tree = ret,
+            key = "name",
+            value = "content"
+        }()
+        content_box[#content_box+1] = gui.Label{ label = "Hello" }
+        ---...
 ```

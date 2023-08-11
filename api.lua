@@ -113,6 +113,8 @@ function sway.Form(fields)
 		fields[#fields+1] = sway.InventoryTiles()
 	end
 
+	fields.name = "content"
+
 	return gui.VBox{
 		bgimg = "sway_bg_full.png",
 		bgimg_middle = 12, -- Number of pixels from each edge.
