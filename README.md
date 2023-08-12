@@ -147,8 +147,8 @@ Returns: Context table.
 | `nav` | `table` | A list of page names. |
 | `nav_titles` | `table` | A list of human readable page names. |
 | `nav_idx` | `number` | current nav index (in `nav` and `nav_titles`) |
-| <td colspan=3>Anything from the [Flow] library's context object
-| <td colspan=3>Anything you'd like to store. _Sway will clear this stored data on log out / log in_
+| | | Anything from the [Flow] library's context object |
+| | | Anything you'd like to store. _Sway will clear this stored data on log out / log in_ |
 
 
 #### Set the player's context
@@ -218,7 +218,7 @@ Members of the `sway` global
 | `pages_unordered` | `table` | Table of pages indexed by order of registration, used to build navigation tabs. |
 | `contexts` | `table` | Table of player contexts by playername. |
 | `enabled` | `boolean` | Defaults to `true`. Set to false to disable the entire mod. Good for other inventory mods. |
-| <td colspan=3>Anything from the above documentation
+| | | Anything from the above documentation |
 
 ## Usage/Examples
 
