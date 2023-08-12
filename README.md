@@ -17,6 +17,7 @@ Sway is a experimental beyond-next-gen inventory for minetest.
 
 > Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
 > official figlet "contributed" collection. `pepper` from the same collection was a close 2nd.
+
 Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be a good modding base.
 
 Sway uses [Flow] formspecs for rendering.
