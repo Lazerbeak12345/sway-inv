@@ -1,5 +1,8 @@
-# Sway is a experimental beyond-next-gen inventory for minetest
+# Sway
 
+Sway is a experimental beyond-next-gen inventory for minetest.
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 ```text
  ____                                      ______
 /\  _`\                                   /\__  _\
@@ -14,113 +17,212 @@
 
 > Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
 > official figlet "contributed" collection. `pepper` from the same collection was a close 2nd.
+Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be a good modding base.
+
+Sway uses [Flow] formspecs for rendering.
 
 > Lots of changes underway! Not ready yet.
 > 
 > In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
 
-## Long-term Goals:
+## Features
 
-- I3 is awesome, but not simple.
-	- 10 × as many LOC as sfinv. (pending measurment comparison to this mod, ofc so this isn't a truly fair metric)
-	- The type of mods that I find people asking for aren't possible in _any_ inventory. I3 adds many of this type of feature - at the cost of core code complexity.
-- Use a _slightly_ different approach for generating the formspecs from I3. This approach gives a very rich API.
-- Use a modpack to reach feature-parity with I3.
-	- It's also under MIT so I can "steal" code, but I'll try my very best to give proper attribution, making use of `Co-authored-by` and `git blame`.
-- Make great use of modpacks
-	- Somehow make use of modpacks to provide API gateways so mods relying on X api should be able to work in this inventory.
-	- Feature modules. Progressive mode and other features will be modules.
-- Support multiple games. (I think most inventory mods do, but I want to be extra sure)
+- So simple that it doesn't depend on any games in particular.
+- Rich API.
 
-> Why is this forked from sfinv?
-
-- Sfinv is simple enough in its core that I can spend more time porting and less time worrying about what features really matter.
-- The structure should be mostly the same
-- I want the core mod to be just as simple as sfinv.
-
-> Why call it "Sway" or "sway-inv?"
-
-That'll make more sense in due time. 😉 It's a perfect name, trust me.
-
-Everything below is subject to become outdated until I reach my minimum goals.
-
----
+## Screenshots
 
 ![Sway Screenshot](screenshot.png)
 
-A cleaner, simpler solution to having an advanced inventory in Minetest.
+<!-- ## Installation -->
 
-Written by rubenwardy.\\
-Modified by Lazerbeak12345 for flow.\\
-Code License: MIT
+## API Reference
 
-* `sway_crafting_arrow.png` - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
-* `sway_hb_bg.png` - renamed from `gui_hb_bg.png`, a texture by BlockMen (CC BY-SA 3.0)
-* `sway_bg_full.png` - renamed from `i3_bg_full.png`, a texture by paramat (CC BY-SA 3.0)
+The API is based on [SFINV]'s api, but isn't compatible.
 
-<!--TODO Include CC BY-SA 3.0 licence text-->
+### Pages
 
-## API
+#### Change the page
 
-Based on sfinv, but not compatible with sfinv.
+```lua
+  sway.set_page(player, pagename)
+```
 
-### sway Methods
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to set the page for. |
+| `pagename` | `string` | **Required**. The name of the page to change to. |
 
-**Pages**
+#### Get the name of the homepage
 
-* sway.set_page(player, pagename) - changes the page
-* sway.get_homepage_name(player) - get the page name of the first page to show to a player
-* sway.register_page(name, def) - register a page, see section below
-* sway.override_page(name, def) - overrides fields of an page registered with register_page.
-    * Note: Page must already be defined, (opt)depend on the mod defining it.
-* sway.set_player_inventory_formspec(player, context) - (re)builds page formspec with optional context defalting to a new context. See sway.get_or_create_context
+```lua
+  sway.get_homepage_name(player)
+```
 
-**Contexts**
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
 
-* sway.get_or_create_context(player) - gets the player's context
-* sway.set_context(player, context)
+#### Register a page
 
-**Theming**
-
-* sway.Form{ player = [player], context = [context], content = [form content], show_inv = [boolean], size = [size info] } - adds a theme to a form
-    * show_inv, defaults to false. Whether to show the player's main inventory
-    * size, defaults to `{ w = 8, h = 8.6 }` if not specified
-* sway.NavGui{ player = [player], context = [context], nav_titles = [list of tab labels], current_idx = [number]) - creates tabheader or returns gui.Nil{} from flow
-
-### sway Members
-
-* pages - table of pages[pagename] = def
-* pages_unordered - array table of pages in order of addition (used to build navigation tabs).
-* contexts - contexts[playername] = player_context
-* enabled - set to false to disable. Good for inventory rehaul mods.
-
-### Context
-
-A table with these keys:
-
-* page - current page name
-* nav - a list of page names
-* nav_titles - a list of page titles
-* nav_idx - current nav index (in nav and nav_titles)
-* anything from the flow library
-* any thing you want to store
-    * sway will clear the stored data on log out / log in
-
-### sway.register_page
-
+```lua
 sway.register_page(name, def)
+```
 
-def is a table containing:
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `name` | `string` | **Required**. The name of the page. |
+| `def` | `table`, see below | **Required**. Page information |
 
-* `title` - human readable page name (required)
-* `get(self, player, context)` - returns a flow form. (required)
-* `is_in_nav(self, player, context)` - return true to show in the navigation (the tab header, by default)
-* `on_enter(self, player, context)` - called when the player changes pages, usually using the tabs.
-* `on_leave(self, player, context)` - when leaving this page to go to another, called before other's on_enter
+#### Override a page
 
-### get formspec
+```lua
+sway.override_page(name, def)
+```
 
-Use sway.Form to apply a layout:
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `name` | `string` | **Required**. The name of the page. |
+| `def` | `table`, see below | **Required**. Page information |
+
+> Note: Page must already be defined, (opt)depend on the mod defining it.
+
+
+#### Page definition
+
+A `table` for page information.
+
+| Key | Type | Description |
+| :-- | :--- | :---------- |
+| `title` | `string` | **Required**. Human readable page name. |
+| `get` | `function`, see below | **Required**. Return a flow form. |
+| `is_in_nav` | `function`, see below | **Optional**. Return true to show in the navigation, which defaults to tabs. |
+| `on_enter` | `function`, see below | **Optional**. Called when the player changes pages, usually using the tabs. |
+| `on_leave` | `function`, see below | **Optional**. When leaving this page to go to another, called before other's `on_enter` |
+
+##### Register a page - def - function args
+
+```lua
+function(self, player, context)
+    -- ...
+end
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `self` | `table` | A reference to the page `def` table. |
+| `player` | Player `ObjectRef` | The player to get the page name for. |
+| `context` | `table` | Context table. See `sway.get_or_create_context` |
+
+#### Refresh form with new changes
+
+```lua
+sway.set_player_inventory_formspec(player, context)
+```
+
+(Re)builds page formspec with optional context defalting to a new context.
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `context` | `table` | **Optional**. Context table. See `sway.get_or_create_context` |
+
+### Contexts
+
+#### Get the player's context
+
+```lua
+sway.get_or_create_context(player)
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+
+Returns: Context table.
+
+| Key | Type | Description |
+| :-- | :--- | :---------- |
+| `page` | `string` | Current page name. |
+| `nav` | `table` | A list of page names. |
+| `nav_titles` | `table` | A list of human readable page names. |
+| `nav_idx` | `number` | current nav index (in `nav` and `nav_titles`) |
+| <td colspan=3>Anything from the [Flow] library's context object
+| <td colspan=3>Anything you'd like to store. _Sway will clear this stored data on log out / log in_
+
+
+#### Set the player's context
+
+```lua
+sway.set_context(player, context)
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
+
+### Theming
+
+#### Add a theme to a form
+
+```lua
+sway.Form{
+    player = player,
+    context = context,
+    show_inv = show_inv,
+    size = size
+    ...children_elements...
+}
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
+| `show_inv` | `boolean` | **Optional**. Whether to show the player's main inventory |
+| `size` | `table` | **Optional**. **Deprecated**. Sets the size of the formspec. Defaults to `{ w = 8, h = 8.6 }` |
+| `...children_elements...` (numbered indexes) | [Flow] elements. | **Required**. The content of the page to show. |
+
+Returns a [Flow] form.
+
+Wraps content in a Flow `VBox` named `"content"`.
+
+#### Create tab navigation
+
+```lua
+sway.NavGui{
+    player = player,
+    context = context,
+    nav_titles = nav_titles,
+    current_idx = current_idx
+}
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
+| `nav_titles` | `table` | A list of human readable page names. 
+| `current_idx` | `number` | current nav index (in `nav_titles`) |
+
+Returns a [Flow] form, unless there's only one tab. In that case it returns `gui.Nil{}` from flow.
+
+### Members
+
+Members of the `sway` global
+
+| Key | Type | Description |
+| :-- | :--- | :---------- |
+| `pages` | `table` | Table of pages by pagename. (see `sway.override_page`) |
+| `pages_unordered` | `table` | Table of pages indexed by order of registration, used to build navigation tabs. |
+| `contexts` | `table` | Table of player contexts by playername. |
+| `enabled` | `boolean` | Defaults to `true`. Set to false to disable the entire mod. Good for other inventory mods. |
+| <td colspan=3>Anything from the above documentation
+
+## Usage/Examples
+
+### Use `sway.Form` to apply a basic layout
 
     local gui = flow.widgets
 	return sway.Form{
@@ -154,8 +256,6 @@ Use sway.Form to apply a layout:
       }
     }
 
-See above (methods section) for more options.
-
 ### Customising themes
 
 Simply override this function to change the navigation:
@@ -180,3 +280,80 @@ And override this function to change the layout (not the actual code, see api.lu
           gui.VBox(fields)
       }
 	end
+
+## FAQ
+
+#### Why is this forked from sfinv?
+
+Three reasons:
+
+- Sfinv is simple enough in its core that I can spend more time porting and less time worrying about what features really matter.
+- The structure should be mostly the same
+- I want the core mod to be just as simple as sfinv.
+
+#### How is this mod different from sfinv?
+
+Aside from plenty of API changes (TODO: document these),
+the mod uses and interacts with [Flow] forms instead of Minetest formspec strings.
+
+#### How is this mod different from other inventory mods?
+
+Here's some, to make searching easier: sfinv, i3, unified inventory, inventory plus, smart inventory
+
+- This mod _is_ minimal and game-universal, like sfinv.
+- This mod _is not_ feature packed and game-specific, like nearly everything else on that list.
+
+To make up that gap, I might make a modpack (or more than one).
+
+#### Why call it "Sway" or "sway-inv?"
+
+This mod is made, in part, to replace the minetest mod called [i3].
+
+I3 seems to be named after a [well known tiling window manager](https://i3wm.org) that is built upon (and limited to) the [X11](https://www.x.org) window system.
+
+The i3 minetest mod is similarally limited to use of (slightly enhanced) formspec strings.
+
+There's a feature compatible competitor to i3wm called _sway_ - where this mod (sway-inv) gets its name. The sway window manager uses a newer, more modern alternative to X11 called _Wayland_.
+
+Sway-inv is like Sway (the window manager) in that it
+
+- Competes with a project called i3.
+- Uses a newer rendering framework than its competitor.
+
+In addition, both sfinv and sway start with the same letter.
+
+#### How do I refer to this mod to avoid confusion with other projects?
+
+When it's 100% clear that you are refering to Sway in the context of Minetest, call it "Sway" or its technical name `sway`.
+
+Otherwise, refer to it as either "Sway-inv" or "sway-inv".
+
+## Roadmap
+
+1. Research alternative (faster, but understandable) way(s) of overriding content.
+2. Full code coverage
+3. Finalize documentation
+4. Make a modpack that reaches feature parity with I3 (on MTG only)
+    - Should be noted that I've already started this, but much of that is throwaway code. I want to see the community's reaction and feedback before I start porting things forrealzies
+
+## Acknowledgements
+
+ - [SFINV] Sway is a fork of SFINV by rubenwardy.
+ - [Flow] Sway uses flow to render formspecs.
+ - [readme.so] Readme generated by readme.so.
+ - [i3] Source of inspiration and some (very small amounts) of properly attributed, licence compatible code.
+
+## License
+
+Code: [MIT](https://choosealicense.com/licenses/mit/)
+
+* `sway_crafting_arrow.png` - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
+* `sway_hb_bg.png` - renamed from `gui_hb_bg.png`, a texture by BlockMen (CC BY-SA 3.0)
+* `sway_bg_full.png` - renamed from `i3_bg_full.png`, a texture by paramat (CC BY-SA 3.0)
+
+TODO: Include CC BY-SA 3.0 licence text.
+
+[SFINV]: https://github.com/rubenwardy/sfinv
+[Flow]: https://github.com/luk3yx/minetest-flow
+[readme.so]: https://readme.so
+[i3]: https://github.com/minetest-mods/i3
