@@ -101,7 +101,7 @@ A `table` for page information.
 | `on_enter` | `function`, see below | **Optional**. Called when the player changes pages, usually using the tabs. |
 | `on_leave` | `function`, see below | **Optional**. When leaving this page to go to another, called before other's `on_enter` |
 
-##### Register a page - def - function args
+##### Page definition function args
 
 ```lua
 function(self, player, context)
