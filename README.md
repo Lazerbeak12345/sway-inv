@@ -112,7 +112,7 @@ end
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
 | `self` | `table` | A reference to the page `def` table. |
-| `player` | Player `ObjectRef` | The player to get the page name for. |
+| `player` | Player `ObjectRef` | The player that will be shown the page. |
 | `context` | `table` | Context table. See `sway.get_or_create_context` |
 
 #### Refresh form with new changes
@@ -125,7 +125,7 @@ sway.set_player_inventory_formspec(player, context)
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `player` | Player `ObjectRef` | **Required**. The player that will be affected. |
 | `context` | `table` | **Optional**. Context table. See `sway.get_or_create_context` |
 
 ### Contexts
@@ -138,7 +138,7 @@ sway.get_or_create_context(player)
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `player` | Player `ObjectRef` | **Required**. The player to get the context for. |
 
 Returns: Context table.
 
@@ -160,7 +160,7 @@ sway.set_context(player, context)
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `player` | Player `ObjectRef` | **Required**. The player to set the context for. |
 | `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
 
 ### Theming
@@ -179,7 +179,7 @@ sway.Form{
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `player` | Player `ObjectRef` | **Required**. The player that is intended to see the form. |
 | `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
 | `show_inv` | `boolean` | **Optional**. Whether to show the player's main inventory |
 | `size` | `table` | **Optional**. **Deprecated**. Sets the size of the formspec. Defaults to `{ w = 8, h = 8.6 }` |
@@ -202,7 +202,7 @@ sway.NavGui{
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the page name for. |
+| `player` | Player `ObjectRef` | **Required**. The player that is intended to see the form. |
 | `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
 | `nav_titles` | `table` | A list of human readable page names. 
 | `current_idx` | `number` | current nav index (in `nav_titles`) |
