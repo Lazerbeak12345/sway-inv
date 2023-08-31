@@ -216,7 +216,7 @@ play nice with into your `mod.conf` file, when appropriate. This will tell
 Minetest that they should run first.
 
 ```lua
-local old_func = sway.registered_pages["sway:crafting"].get
+local old_func = sway.pages["sway:crafting"].get
 sway.override_page("sway:crafting", {
     get = function(self, player, context, ...)
         local ret = old_func(self, player, context, ...)
@@ -251,4 +251,19 @@ You can simplify that loop down to this, since that code was only getting the fi
         }()
         content_box[#content_box+1] = gui.Label{ label = "Hello" }
         ---...
+```
+
+This could be made even faster, though it uses APIs dependant on the mod providing the tab. The search function has to compare every single node to see if it matches. In the case of the `"sway:crafting"` page, and other simmilar apis, they provide functions to override content. This reduces the time complexity from O(n) to O(1). Of course, if we actually cared _exactly_ which element we wanted to modify, we'd still want to do a search, but making use of _both_ apis can make your forms _much_ faster.
+
+The `"sway:crafting"` page provides the `CraftingRow` function that can be overridden.
+
+```lua
+local old_func = sway.pages["sway:crafting"].CraftingRow
+sway.override_page("sway:crafting", {
+    CraftingRow = function(self, player, context, ...)
+        local ret = old_func(self, player, context, ...)
+        ret[#ret+1] = gui.Label{ label = "Hello" }
+        return ret
+    end
+})
 ```

@@ -100,6 +100,7 @@ A `table` for page information.
 | `is_in_nav` | `function`, see below | **Optional**. Return true to show in the navigation, which defaults to tabs. |
 | `on_enter` | `function`, see below | **Optional**. Called when the player changes pages, usually using the tabs. |
 | `on_leave` | `function`, see below | **Optional**. When leaving this page to go to another, called before other's `on_enter` |
+| | | **Optional**. Anything else you'd like to add. These other values can, of course, be accessed through the `self` value in the above callbacks as you'd expect. |
 
 ##### Page definition function args
 
