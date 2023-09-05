@@ -1,6 +1,6 @@
 # Sway
 
-Sway is a experimental beyond-next-gen inventory for minetest.
+Sway is an experimental beyond-next-gen inventory for minetest.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 ```text
@@ -18,11 +18,11 @@ Sway is a experimental beyond-next-gen inventory for minetest.
 > Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
 > official figlet "contributed" collection. `pepper` from the same collection was a close 2nd.
 
-Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be a good modding base.
+Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be an excellent modding base.
 
 Sway uses [Flow] formspecs for rendering.
 
-> Lots of changes underway! Not ready yet.
+> Lots of changes are underway! Not ready yet.
 > 
 > In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
 
@@ -357,10 +357,14 @@ Otherwise, refer to it as either "Sway-inv" or "sway-inv".
 
 ## Roadmap
 
-1. Publish on Minetest Forumn with intent of opening more feedback channels.
-2. Full code coverage
-3. Finalize documentation
-4. Make a modpack that reaches feature parity with I3 (on MTG only)
+1. Full code coverage
+  1. Add luacheck workflow.
+  2. Add busted workflow.
+  3. Start tracking versions in `0.*.*`
+2. Finalize documentation
+  1. Readme and tutorial must be up-to-date and fully tested
+  2. At this point version 1 is ready.
+3. Make a modpack that reaches feature parity with I3 (on MTG only)
     - Should be noted that I've already started this, but much of that is throwaway code. I want to see the community's reaction and feedback before I start porting things forrealzies
 
 ## Acknowledgements
