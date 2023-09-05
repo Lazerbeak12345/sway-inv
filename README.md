@@ -360,12 +360,12 @@ Otherwise, refer to it as either "Sway-inv" or "sway-inv".
 ## Roadmap
 
 1. Full code coverage
-  1. Add luacheck workflow.
-  2. Add busted workflow.
-  3. Start tracking versions in `0.*.*`
+    1. Add luacheck workflow.
+    2. Add busted workflow.
+    3. Start tracking versions in `0.*.*`
 2. Finalize documentation
-  1. Readme and tutorial must be up-to-date and fully tested
-  2. At this point version 1 is ready.
+    1. Readme and tutorial must be up-to-date and fully tested
+    2. At this point version 1 is ready.
 3. Make a modpack that reaches feature parity with I3 (on MTG only)
     - Should be noted that I've already started this, but much of that is throwaway code. I want to see the community's reaction and feedback before I start porting things forrealzies
 
