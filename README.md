@@ -357,7 +357,7 @@ Otherwise, refer to it as either "Sway-inv" or "sway-inv".
 
 ## Roadmap
 
-1. Research alternative (faster, but understandable) way(s) of overriding content.
+1. Publish on Minetest Forumn with intent of opening more feedback channels.
 2. Full code coverage
 3. Finalize documentation
 4. Make a modpack that reaches feature parity with I3 (on MTG only)
