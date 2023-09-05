@@ -1,10 +1,13 @@
 local minetest, dump, flow, sway, flow_extras = minetest, dump, flow, sway, flow_extras
 sway.pages = {}
 sway.pages_unordered = {}
-sway.contexts = {}
+local contexts = {}
 sway.enabled = true
 sway.widgets = {}
+local current_player = nil
 local gui = flow.widgets
+
+-- TODO: use fake tabheader
 
 function sway.register_page(name, def)
 	assert(name, "Invalid sway page. Requires a name")
@@ -28,13 +31,7 @@ function sway.override_page(name, def)
 	end
 end
 
-function sway.get_nav_gui_tabevent(player, context)
-	sway.set_page(player, context.nav[context.form.sway_nav_tabs])
-end
-
 function sway.NavGui(fields)
-	-- local player = fields.player
-	-- local context = fields.context
 	local nav_titles = fields.nav_titles
 	local current_idx = fields.current_idx
 	if #nav_titles > 1 then
@@ -45,7 +42,9 @@ function sway.NavGui(fields)
 			current_tab = current_idx,
 			transparent = true,
 			draw_border = false,
-			on_event = sway.get_nav_gui_tabevent
+			on_event = function(player, context)
+				sway.set_page(player, context.nav[context.form.sway_nav_tabs])
+			end
 		}
 	else
 		return gui.Nil{}
@@ -56,8 +55,6 @@ function sway.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
 	end
-	-- local player = fields.player
-	-- local context = fields.context
 	local w = fields.w or 8
 	local h = fields.h or 4
 	return gui.VBox{
@@ -88,26 +85,11 @@ function sway.insert_prepend(widget)
 	table.insert(gui, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
 end
 function sway.Form(fields)
-	local player = fields.player
-	fields.player = nil
-	local context = fields.context
-	fields.context = nil
 	local show_inv = fields.show_inv
 	fields.show_inv = nil
-	local size = fields.size
-	fields.size = nil
 
-	if size then
-		assert(type(size) == "table", "size must be table")
-	end
-	local default_size = { w = 8, h = 9.1 }
-	local actual_size = size and {
-		w = size.w or default_size.w,
-		h = size.h or default_size.h
-	} or default_size
+	local context = sway.get_or_create_context()
 
-	fields.min_w = actual_size.w
-	fields.min_h = actual_size.h
 	fields.padding = .4
 	if show_inv then
 		fields[#fields+1] = sway.InventoryTiles()
@@ -120,8 +102,6 @@ function sway.Form(fields)
 		bgimg_middle = 12, -- Number of pixels from each edge.
 		padding = 0,
 		sway.NavGui{
-			player = player,
-			context = context,
 			nav_titles = context.nav_titles,
 			current_idx = context.nav_idx
 		},
@@ -134,15 +114,22 @@ function sway.get_homepage_name(_)
 end
 
 sway.form = flow.make_gui(function (player, ctx)
+	local old_current_player = current_player -- Just in case it's called from another player. At top level this is nil
+	if old_current_player then
+		minetest.log("warning", "[sway] sway was told to re-render during a render (recursive)")
+	end
+	current_player = player
 	local form = sway.get_form(player, ctx)
 	if not form.no_prepend then
 		sway.insert_prepend(form)
 	end
+	current_player = old_current_player
 	sway.set_context(player, ctx)
 	return form
 end)
 
 function sway.get_form(player, context)
+	player, context = sway.get_player_and_context(player, context)
 	-- Generate navigation tabs
 	local nav = {}
 	local nav_ids = {}
@@ -186,20 +173,43 @@ function sway.get_form(player, context)
 end
 
 function sway.get_or_create_context(player)
+	if not player then
+		player = assert(current_player, "[sway] get_or_create_context requires a player object when run outside of a form")
+	end
 	local name = player:get_player_name()
-	local context = sway.contexts[name]
+	local context = contexts[name]
 	if not context then
+		minetest.log("action", "[sway] creating new context for player " .. name)
 		-- This must be the only place where a "fresh" context is generated.
 		context = {
-			page = sway.get_homepage_name(player)
+			page = sway.get_homepage_name(player),
+			player = player
 		}
-		sway.contexts[name] = context
+		contexts[name] = context
 	end
 	return context
 end
 
+function sway.get_player_and_context(player, context)
+	if not context then
+		context = sway.get_or_create_context(player)
+	end
+	if not player then
+		player = context.player
+	end
+	return player, context
+end
+
 function sway.set_context(player, context)
-	sway.contexts[player:get_player_name()] = context
+	assert(player and player.get_player_name, "[sway] set_context always requires a PlayerRef")
+	local name = player:get_player_name()
+	if not context then
+		minetest.log("action", "[sway] deleting context for " .. name)
+	end
+	if not context.player then
+		context.player = player
+	end
+	contexts[name] = context
 end
 
 function sway.set_player_inventory_formspec(player, context)
@@ -214,6 +224,7 @@ function sway.set_page(player, pagename)
 	end
 	context.page = pagename
 	local page = sway.pages[pagename]
+	assert(page, "[sway] Page was set to an invalid page")
 	if page.on_enter then
 		page:on_enter(player, context)
 	end
@@ -232,5 +243,5 @@ minetest.register_on_joinplayer(function(player)
 end)
 
 minetest.register_on_leaveplayer(function(player)
-	sway.contexts[player:get_player_name()] = nil
+	contexts[player:get_player_name()] = nil
 end)

@@ -54,6 +54,8 @@ The API is based on [SFINV]'s api, but isn't compatible.
 | `player` | Player `ObjectRef` | **Required**. The player to set the page for. |
 | `pagename` | `string` | **Required**. The name of the page to change to. |
 
+Asserts that the page is valid.
+
 #### Get the name of the homepage
 
 ```lua
@@ -139,7 +141,7 @@ sway.get_or_create_context(player)
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player to get the context for. |
+| `player` | Player `ObjectRef` | **Required**(Outside of form generation)/**Optional**(Inside of form generation) The player to get the context for. |
 
 Returns: Context table.
 
@@ -149,9 +151,22 @@ Returns: Context table.
 | `nav` | `table` | A list of page names. |
 | `nav_titles` | `table` | A list of human readable page names. |
 | `nav_idx` | `number` | current nav index (in `nav` and `nav_titles`) |
+| `player` | Player `ObjectRef` | The player that owns this context. |
 | | | Anything from the [Flow] library's context object |
 | | | Anything you'd like to store. _Sway will clear this stored data on log out / log in_ |
 
+#### Set the player's context
+
+```lua
+local player, context = sway.get_player_and_context(player, context)
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `player` | Player `ObjectRef` | **Optional**. The player. |
+| `context` | `table` | **Optional**. Context table. See `sway.get_or_create_context` |
+
+Returns same as arguments (as a tuple), but guarantees that the value is not `nil`.
 
 #### Set the player's context
 
@@ -170,8 +185,6 @@ sway.set_context(player, context)
 
 ```lua
 sway.Form{
-    player = player,
-    context = context,
     show_inv = show_inv,
     size = size
     ...children_elements...
@@ -180,8 +193,6 @@ sway.Form{
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player that is intended to see the form. |
-| `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
 | `show_inv` | `boolean` | **Optional**. Whether to show the player's main inventory |
 | `size` | `table` | **Optional**. **Deprecated**. Sets the size of the formspec. Defaults to `{ w = 8, h = 8.6 }` |
 | `...children_elements...` (numbered indexes) | [Flow] elements. | **Required**. The content of the page to show. |
@@ -194,8 +205,6 @@ Wraps content in a Flow `VBox` named `"content"`.
 
 ```lua
 sway.NavGui{
-    player = player,
-    context = context,
     nav_titles = nav_titles,
     current_idx = current_idx
 }
@@ -203,12 +212,26 @@ sway.NavGui{
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `player` | Player `ObjectRef` | **Required**. The player that is intended to see the form. |
-| `context` | `table` | **Required**. Context table. See `sway.get_or_create_context` |
 | `nav_titles` | `table` | A list of human readable page names. 
 | `current_idx` | `number` | current nav index (in `nav_titles`) |
 
 Returns a [Flow] form, unless there's only one tab. In that case it returns `gui.Nil{}` from flow.
+
+#### Create Inventory Tiles
+
+```lua
+sway.InventoryTiles{
+    w = w,
+    h = h
+}
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `w` | `number` | **Optional** The width of the tiles. Defaults to 8
+| `h` | `number` | **Optional** The height of the tiles. Defaults to 4
+
+Returns a [Flow] form
 
 ### Members
 
@@ -218,7 +241,6 @@ Members of the `sway` global
 | :-- | :--- | :---------- |
 | `pages` | `table` | Table of pages by pagename. (see `sway.override_page`) |
 | `pages_unordered` | `table` | Table of pages indexed by order of registration, used to build navigation tabs. |
-| `contexts` | `table` | Table of player contexts by playername. |
 | `enabled` | `boolean` | Defaults to `true`. Set to false to disable the entire mod. Good for other inventory mods. |
 | | | Anything from the above documentation |
 
@@ -226,10 +248,9 @@ Members of the `sway` global
 
 ### Use `sway.Form` to apply a basic layout
 
+```lua
     local gui = flow.widgets
 	return sway.Form{
-      player = player,
-      context = context,
       show_inv = true,
       gui.HBox{
 			align_h = "center",
@@ -257,31 +278,35 @@ Members of the `sway` global
 			}
       }
     }
+```
 
 ### Customising themes
 
 Simply override this function to change the navigation:
 
+```lua
     local gui = flow.widgets
 	function sway.NavGui(fields)
-        local player, context, nav_titles, current_idx = fields.player, fields.context, fields.nav_titles, fields.current_idx
+        local nav_titles, current_idx = fields.nav_titles, fields.current_idx
 		return gui.Label{ label = "nav gui" }
 	end
+```
 
 And override this function to change the layout (not the actual code, see api.lua for that):
 
+```lua
 	function sway.Form(fields)
-      local player, context, content, show_inv, size = fields.player, fields.context, fields.content, fields.show_inv, fields.size
+      local show_inv, size = fields.show_inv, fields.size
+      local context = sway.get_or_create_context()
       return gui.VBox{
           sway.NavGui{
-              player = player,
-              context = context,
               nav_titles = context.nav_titles,
               current_idx = context.nav_idx
           },
           gui.VBox(fields)
       }
 	end
+```
 
 ## FAQ
 
