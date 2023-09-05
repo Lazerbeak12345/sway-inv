@@ -2,7 +2,9 @@
 
 Sway is an experimental beyond-next-gen inventory for minetest.
 
+[![Minetest Forums](https://img.shields.io/badge/Minetest_Forums-Sway-%234faf00?logo=minetest&labelColor=%23161616)](https://forum.minetest.net/viewtopic.php?t=29774)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+
 ```text
  ____                                      ______
 /\  _`\                                   /\__  _\
