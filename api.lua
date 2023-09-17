@@ -172,7 +172,7 @@ function sway.get_or_create_context(player)
 	if context then return context end
 	assert(player, "[sway] get_or_create_context requires a player object when run outside of a form")
 	local name = player:get_player_name()
-	local context = contexts[name]
+	context = contexts[name]
 	if not context then
 		minetest.log("action", "[sway] creating new context for player " .. name)
 		-- This must be the only place where a "fresh" context is generated.
