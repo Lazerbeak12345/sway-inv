@@ -4,7 +4,6 @@ sway.pages_unordered = {}
 local contexts = {}
 sway.enabled = true
 sway.widgets = {}
-local current_player = nil
 local gui = flow.widgets
 
 -- TODO: use fake tabheader
@@ -114,17 +113,13 @@ function sway.get_homepage_name(_)
 end
 
 sway.form = flow.make_gui(function (player, ctx)
-	local old_current_player = current_player -- Just in case it's called from another player. At top level this is nil
-	if old_current_player then
-		minetest.log("warning", "[sway] sway was told to re-render during a render (recursive)")
-	end
-	current_player = player
-	local form = sway.get_form(player, ctx)
+	sway.set_context(player, ctx)
+	local form = flow_extras.set_wrapped_context(ctx, function ()
+		return sway.get_form(player, ctx)
+	end)
 	if not form.no_prepend then
 		sway.insert_prepend(form)
 	end
-	current_player = old_current_player
-	sway.set_context(player, ctx)
 	return form
 end)
 
@@ -173,9 +168,9 @@ function sway.get_form(player, context)
 end
 
 function sway.get_or_create_context(player)
-	if not player then
-		player = assert(current_player, "[sway] get_or_create_context requires a player object when run outside of a form")
-	end
+	local context = flow_extras.get_context()
+	if context then return context end
+	assert(player, "[sway] get_or_create_context requires a player object when run outside of a form")
 	local name = player:get_player_name()
 	local context = contexts[name]
 	if not context then

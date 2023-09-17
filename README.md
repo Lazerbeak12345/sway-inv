@@ -120,6 +120,8 @@ end
 | `player` | Player `ObjectRef` | The player that will be shown the page. |
 | `context` | `table` | Context table. See `sway.get_or_create_context` |
 
+Return a `flow` page. Sway makes use of `flow_extras.set_wrapped_context` internally. This ensures that `flow_extras.get_context` works if you need to share code between multiple forms.
+
 #### Refresh form with new changes
 
 ```lua
