@@ -1,0 +1,4 @@
+return {
+    reporter = "multiple",
+    multiple = { reporters = { "default", "multiple.html" } }
+}

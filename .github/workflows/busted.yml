@@ -1,0 +1,48 @@
+on: [push, pull_request]
+name: busted
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: luk3yx/minetest-formspec_ast
+          path: formspec_ast
+
+      - uses: actions/checkout@v3
+        with:
+          repository: luk3yx/minetest-flow
+          path: flow
+
+      - uses: actions/checkout@v3
+        with:
+          repository: Lazerbeak12345/flow-extras
+          path: flow-extras
+
+      - uses: actions/checkout@v3
+        with:
+          path: sway-inv
+
+      - uses: leafo/gh-actions-lua@v9
+      - uses: leafo/gh-actions-luarocks@v4
+      - name: setup deps
+        run: |
+          luarocks install busted
+          luarocks install luacov
+          luarocks install luacov-multiple
+          luarocks install luacov-coveralls
+      - name: run tests
+        run: |
+          pushd sway-inv
+          busted -c -v
+          popd
+      - name: send coverage
+        if: success()
+        continue-on-error: true
+        run: |
+          pushd sway-inv
+          luacov-coveralls -r $PWD -i "^ini" -i "^api" -i "^crafting"
+          # Keep above in sync with ./run-tests
+          popd
+        env:
+          COVERALLS_REPO_TOKEN: ${{ github.token }}
