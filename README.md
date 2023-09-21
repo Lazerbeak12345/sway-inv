@@ -24,7 +24,7 @@ Sway is an experimental beyond-next-gen inventory for minetest.
 
 Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be an excellent modding base.
 
-Sway uses [Flow] formspecs for rendering.
+Sway uses [Flow] formspecs for rendering. With Sway, formspec size is no longer a limit to your UI or UX. You can have fully dynamic layouts too!
 
 > Lots of changes are underway! The API is not stable yet.
 
