@@ -22,16 +22,11 @@ Sway is an experimental beyond-next-gen inventory for minetest.
                                      \/__/
 ```
 
-> Above generated via `echo "Sway Inv." | figlet -f larry3d`. `larry3d` font is from the
-> official figlet "contributed" collection. `pepper` from the same collection was a close 2nd.
-
 Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advanced inventory in Minetest." It's intended to be an excellent modding base.
 
 Sway uses [Flow] formspecs for rendering.
 
-> Lots of changes are underway! Not ready yet.
-> 
-> In the meantime, checkout [i3](https://github.com/minetest-mods/i3). It's almost certianly what you want to use till this starts working.
+> Lots of changes are underway! The API is not stable yet.
 
 ## Features
 
@@ -392,6 +387,11 @@ Code: [MIT](https://choosealicense.com/licenses/mit/)
 * `sway_bg_full.png` - renamed from `i3_bg_full.png`, a texture by paramat (CC BY-SA 3.0)
 
 TODO: Include CC BY-SA 3.0 licence text.
+
+The Sway Inv ascii art was generated via `echo "Sway Inv." | figlet -f larry3d`.
+`larry3d` font is from the official figlet "contributed" collection. `pepper`
+from the same collection was a close 2nd. This _seems_ to be under the
+"Bsd 3-Clause 'New' or 'Revised' Licence"
 
 [SFINV]: https://github.com/rubenwardy/sfinv
 [Flow]: https://github.com/luk3yx/minetest-flow
