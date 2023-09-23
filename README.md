@@ -380,18 +380,17 @@ Otherwise, refer to it as either "Sway-inv" or "sway-inv".
 
 ## License
 
-Code: [MIT](https://choosealicense.com/licenses/mit/)
+Code: [MIT](https://choosealicense.com/licenses/mit/) (see <./CODE_LICENSE.txt>)
 
 * `sway_crafting_arrow.png` - renamed from a texture by paramat, derived from a texture by BlockMen (CC BY-SA 3.0).
 * `sway_hb_bg.png` - renamed from `gui_hb_bg.png`, a texture by BlockMen (CC BY-SA 3.0)
 * `sway_bg_full.png` - renamed from `i3_bg_full.png`, a texture by paramat (CC BY-SA 3.0)
 
-TODO: Include CC BY-SA 3.0 licence text.
+For a copy of CC BY-SA 3.0 see <./MEDIA_LICENSE.txt>
 
 The Sway Inv ascii art was generated via `echo "Sway Inv." | figlet -f larry3d`.
 `larry3d` font is from the official figlet "contributed" collection. `pepper`
-from the same collection was a close 2nd. This _seems_ to be under the
-"Bsd 3-Clause 'New' or 'Revised' Licence"
+from the same collection was a close 2nd.
 
 [SFINV]: https://github.com/rubenwardy/sfinv
 [Flow]: https://github.com/luk3yx/minetest-flow
