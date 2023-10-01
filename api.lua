@@ -3,16 +3,15 @@ sway.pages = {}
 sway.pages_unordered = {}
 local contexts = {}
 sway.enabled = true
-sway.widgets = {}
 local gui = flow.widgets
 
 -- TODO: use fake tabheader
 
 function sway.register_page(name, def)
-	assert(name, "Invalid sway page. Requires a name")
-	assert(def, "Invalid sway page. Requires a def[inition] table")
-	assert(def.get, "Invalid sway page. Def requires a get function.")
-	assert(not sway.pages[name], "Attempt to register already registered sway page " .. dump(name))
+	assert(type(name) == "string", "[sway] register_page: requires name to be string")
+	assert(type(def) == "table", "[sway] register_page: requires definition table to be table")
+	assert(type(def.get) == "function", "[sway] register_page: requires get inside the definition table to be function")
+	assert(not sway.pages[name], "[sway] register_page: page '" .. name .. "' must not already be registered")
 
 	sway.pages[name] = def
 	def.name = name
@@ -20,13 +19,24 @@ function sway.register_page(name, def)
 end
 
 function sway.override_page(name, def)
-	minetest.log("action", "overriding page " .. name)
-	assert(name, "Invalid sway page override. Requires a name")
-	assert(def, "Invalid sway page override. Requires a def[inition] table")
+	assert(type(name) == "string", "[sway] override_page: requires name to be a string")
+	assert(type(def) == "table", "[sway] override_page: requires definition table to be a table")
 	local page = sway.pages[name]
-	assert(page, "Attempt to override sway page " .. dump(name) .. " which does not exist.")
+	assert(type(page) == "table", "[sway] override_page: the page '" .. name .. "' could not be found to override")
+	if type(def.name) ~= "nil" then
+		assert(type(def.name) == "string", "[sway] override_page: When overriding the name, it must be a string.")
+	end
+	if type(def.get) ~= "nil" then
+		assert(type(def.get) == "function", "[sway] override_page: When overriding get, it must be a function.")
+	end
+	minetest.log("action", "[sway] override_page: '" .. name .. "' is becoming overriden")
 	for key, value in pairs(def) do
 		page[key] = value
+	end
+	if type(def.name) == "string" and name ~= def.name then
+		minetest.log("action", "[sway] override_page: '" .. name .. "' is becoming renamed to '" .. page.name .. "'")
+		sway.pages[page.name] = page
+		sway.pages[name] = nil
 	end
 end
 
@@ -34,16 +44,19 @@ function sway.NavGui(fields)
 	local nav_titles = fields.nav_titles
 	local current_idx = fields.current_idx
 	if #nav_titles > 1 then
-		return gui.Tabheader{
-			h = 1,
-			name = "sway_nav_tabs",
-			captions = nav_titles,
-			current_tab = current_idx,
-			transparent = true,
-			draw_border = false,
-			on_event = function(player, context)
-				sway.set_page(player, context.nav[context.form.sway_nav_tabs])
-			end
+		return gui.HBox{
+			gui.Spacer{ expand = false, w = .2 },
+			gui.Tabheader{
+				h = 1,
+				name = "sway_nav_tabs",
+				captions = nav_titles,
+				current_tab = current_idx,
+				transparent = true,
+				draw_border = false,
+				on_event = function(player, context)
+					sway.set_page(player, context.nav[context.form.sway_nav_tabs])
+				end
+			}
 		}
 	else
 		return gui.Nil{}
