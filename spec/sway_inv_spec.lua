@@ -56,6 +56,9 @@ describe("pages", function ()
 		sway.pages_unordered = {}
 	end)
 	describe("register_page", function ()
+		it("is a function on sway", function ()
+			assert.equal("function", type(sway.register_page))
+		end)
 		it("requires name", function ()
 			assert.has_error(function ()
 				sway.register_page()
@@ -101,6 +104,9 @@ describe("pages", function ()
 		end)
 	end)
 	describe("override_page", function ()
+		it("is a function on sway", function ()
+			assert.equal("function", type(sway.override_page))
+		end)
 		it("requires name", function ()
 			assert.has_error(function ()
 				sway.override_page()
@@ -175,8 +181,37 @@ describe("pages", function ()
 			end, "[sway] override_page: When overriding get, it must be a function.")
 		end)
 	end)
-	pending"pages"
-	pending"pages_unordered"
+	describe("pages", function ()
+		it("is a table on sway", function ()
+			assert.equal("table", type(sway.pages))
+		end)
+		it("register_page adds to this table by pagename", function ()
+			local def = { get = function () end }
+			sway.register_page(testpagename, def)
+			local def2 = { get = function () end }
+			sway.register_page(testpagename .. "1", def2)
+			assert.same({
+				[testpagename]= def,
+				[testpagename .. "1"]= def2
+			}, sway.pages)
+			assert.equal(def, sway.pages[testpagename])
+			assert.equal(def2, sway.pages[testpagename .. "1"])
+		end)
+	end)
+	describe("pages_unordered", function ()
+		it("is a table on sway", function ()
+			assert.equal("table", type(sway.pages_unordered))
+		end)
+		it("register_page adds to this table by order registered", function ()
+			local def = { get = function () end }
+			sway.register_page(testpagename, def)
+			local def2 = { get = function () end }
+			sway.register_page(testpagename .. "1", def2)
+			assert.same({ def, def2 }, sway.pages_unordered)
+			assert.equal(def, sway.pages_unordered[1])
+			assert.equal(def2, sway.pages_unordered[2])
+		end)
+	end)
 	pending"get_homepage_name"
 	pending"set_page"
 	pending"get_page"
