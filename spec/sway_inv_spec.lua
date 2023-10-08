@@ -212,7 +212,24 @@ describe("pages", function ()
 			assert.equal(def2, sway.pages_unordered[2])
 		end)
 	end)
-	pending"get_homepage_name"
+	describe("get_homepage_name", function ()
+		it("is a function on sway", function ()
+			assert.equal("function", type(sway.get_homepage_name))
+		end)
+		it("by default returns the crafting page", function ()
+			assert.same("sway:crafting", sway.get_homepage_name{}) -- This table is a mock of the player api
+		end)
+		it("can be overriden", function ()
+			local old = sway.get_homepage_name
+			function sway.get_homepage_name(_)
+				return testpagename
+			end
+			assert.same(testpagename, sway.get_homepage_name{}) -- This table is a mock of the player api
+			sway.get_homepage_name = old
+		end)
+		-- NOTE: Requires testing of the other stuff.... perhaps it should be tested from callsite instead
+		pending"is given the player object"
+	end)
 	pending"set_page"
 	pending"get_page"
 end)
