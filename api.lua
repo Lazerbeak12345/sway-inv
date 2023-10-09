@@ -180,6 +180,15 @@ function sway.get_form(player, context)
 	end
 end
 
+local function ensure_valid_context(player, ctx)
+	if not ctx.page then
+		ctx.page = sway.get_homepage_name(player)
+	end
+	if not ctx.player then
+		ctx.player = player
+	end
+end
+
 function sway.get_or_create_context(player)
 	local context = flow_extras.get_context()
 	if context then return context end
@@ -187,12 +196,10 @@ function sway.get_or_create_context(player)
 	local name = player:get_player_name()
 	context = contexts[name]
 	if not context then
-		minetest.log("action", "[sway] creating new context for player " .. name)
+		minetest.log("action", "[sway] get_or_create_context: creating new context for '" .. name .. "'")
 		-- This must be the only place where a "fresh" context is generated.
-		context = {
-			page = sway.get_homepage_name(player),
-			player = player
-		}
+		context = {}
+		ensure_valid_context(player, context)
 		contexts[name] = context
 	end
 	return context
@@ -209,13 +216,12 @@ function sway.get_player_and_context(player, context)
 end
 
 function sway.set_context(player, context)
-	assert(player and player.get_player_name, "[sway] set_context always requires a PlayerRef")
+	assert(player and player.get_player_name, "[sway] set_context: Requires a playerref")
 	local name = player:get_player_name()
 	if not context then
-		minetest.log("action", "[sway] deleting context for " .. name)
-	end
-	if not context.player then
-		context.player = player
+		minetest.log("action", "[sway] set_context: deleting context for '" .. name .. "'")
+	else
+		ensure_valid_context(player, context)
 	end
 	contexts[name] = context
 end

@@ -182,6 +182,7 @@ describe("pages", function ()
 		end)
 	end)
 	describe("pages", function ()
+		-- TODO isn't this a pointless assertion?
 		it("is a table on sway", function ()
 			assert.equal("table", type(sway.pages))
 		end)
@@ -199,6 +200,7 @@ describe("pages", function ()
 		end)
 	end)
 	describe("pages_unordered", function ()
+		-- TODO isn't this a pointless assertion?
 		it("is a table on sway", function ()
 			assert.equal("table", type(sway.pages_unordered))
 		end)
@@ -230,6 +232,59 @@ describe("pages", function ()
 		-- NOTE: Requires testing of the other stuff.... perhaps it should be tested from callsite instead
 		pending"is given the player object"
 	end)
+	-- TODO do these after context
 	pending"set_page"
 	pending"get_page"
+end)
+describe("context", function ()
+	describe("set_context", function ()
+		it("is a function on sway", function ()
+			assert.same("function", type(sway.set_context))
+		end)
+		it("requires a player", function ()
+			assert.has_error(function ()
+				sway.set_context()
+			end, "[sway] set_context: Requires a playerref")
+		end)
+		it("requires a playerref", function ()
+			assert.has_error(function ()
+				sway.set_context{}
+			end, "[sway] set_context: Requires a playerref")
+		end)
+		local mock_playerref = {
+			get_player_name = function(_)
+				return "lazerbeak12345"
+			end
+		}
+		it("deletes the current context if it wasn't be provided", function ()
+			stub(minetest, "log")
+			sway.set_context(mock_playerref)
+			-- assert that it was logged to be deleted
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] set_context: deleting context for 'lazerbeak12345'"
+			)
+			assert.stub(minetest.log).was.called(1)
+			sway.get_or_create_context(mock_playerref)
+			-- assert that getting the context causes a new log item that it was created
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			assert.stub(minetest.log).was.called(2)
+			-- delete it again to keep state clean. We know this works because we just asserted that it does.
+			sway.set_context(mock_playerref)
+		end)
+		it("ensures that the needed properties are present", function ()
+			local ctx = {}
+			sway.set_context(mock_playerref, ctx)
+			assert.equal(ctx, sway.get_or_create_context(mock_playerref))
+			assert.same("string", type(ctx.page))
+			assert.equal(mock_playerref, ctx.player)
+			-- Clean the state
+			sway.set_context(mock_playerref)
+		end)
+	end)
+	pending"get_or_create_context"
+	pending"get_player_and_context"
 end)
