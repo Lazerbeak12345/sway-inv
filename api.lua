@@ -192,7 +192,7 @@ end
 function sway.get_or_create_context(player)
 	local context = flow_extras.get_context()
 	if context then return context end
-	assert(player, "[sway] get_or_create_context requires a player object when run outside of a form")
+	assert(player, "[sway] get_or_create_context: Requires a playerref when run outside of a form.")
 	local name = player:get_player_name()
 	context = contexts[name]
 	if not context then

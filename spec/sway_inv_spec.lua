@@ -40,7 +40,8 @@ dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
-local sway = sway
+local sway, flow, flow_extras = sway, flow, flow_extras
+local gui = flow.widgets
 describe("*basics*", function ()
 	it("doesn't error out when loading init.lua", function ()
 		assert(true, "by the time it got here it would have failed if it didn't work")
@@ -237,6 +238,11 @@ describe("pages", function ()
 	pending"get_page"
 end)
 describe("context", function ()
+	local mock_playerref = {
+		get_player_name = function(_)
+			return "lazerbeak12345"
+		end
+	}
 	describe("set_context", function ()
 		it("is a function on sway", function ()
 			assert.same("function", type(sway.set_context))
@@ -251,11 +257,6 @@ describe("context", function ()
 				sway.set_context{}
 			end, "[sway] set_context: Requires a playerref")
 		end)
-		local mock_playerref = {
-			get_player_name = function(_)
-				return "lazerbeak12345"
-			end
-		}
 		it("deletes the current context if it wasn't be provided", function ()
 			stub(minetest, "log")
 			sway.set_context(mock_playerref)
@@ -285,6 +286,59 @@ describe("context", function ()
 			sway.set_context(mock_playerref)
 		end)
 	end)
-	pending"get_or_create_context"
+	describe("get_or_create_context", function ()
+		it("is a function on sway", function ()
+			assert.same("function", type(sway.get_or_create_context))
+		end)
+		it("returns context from flow_extras if found", function ()
+			local flow_extras_ctx = {}
+			local output
+			flow_extras.set_wrapped_context(flow_extras_ctx, function ()
+				output = sway.get_or_create_context()
+			end)
+			assert.equal(flow_extras_ctx, output)
+		end)
+		it("requires a player if flow_extras can't get the context", function ()
+			assert.has_error(function ()
+				sway.get_or_create_context()
+			end, "[sway] get_or_create_context: Requires a playerref when run outside of a form.")
+		end)
+		it("if context can't be found create a new one", function ()
+			-- Clean the state
+			sway.set_context(mock_playerref)
+			stub(minetest, "log")
+			local ctx = sway.get_or_create_context(mock_playerref)
+			assert.truthy(ctx, "It exsists at first.")
+			assert.stub(minetest.log).was.called(1)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			-- Clean the state again
+			sway.set_context(mock_playerref)
+			assert.stub(minetest.log).was.called(2)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] set_context: deleting context for 'lazerbeak12345'"
+			)
+			local old_ctx = ctx
+			ctx = sway.get_or_create_context(mock_playerref)
+			assert.stub(minetest.log).was.called(3)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			assert.truthy(ctx, "It still exsists")
+			assert.are_not.equal(ctx, old_ctx)
+			-- Clean the state at the end
+			sway.set_context(mock_playerref)
+		end)
+		it("return the context if it can be found", function ()
+			local ctx = {}
+			sway.set_context(mock_playerref, ctx)
+			assert.equal(ctx, sway.get_or_create_context(mock_playerref))
+			sway.set_context(mock_playerref)
+		end)
+	end)
 	pending"get_player_and_context"
 end)
