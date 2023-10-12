@@ -40,8 +40,7 @@ dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
-local sway, flow, flow_extras = sway, flow, flow_extras
-local gui = flow.widgets
+local sway, flow_extras = sway, flow_extras
 describe("*basics*", function ()
 	it("doesn't error out when loading init.lua", function ()
 		assert(true, "by the time it got here it would have failed if it didn't work")
