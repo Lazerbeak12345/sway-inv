@@ -2,6 +2,7 @@
 
 Sway is an experimental beyond-next-gen inventory for minetest.
 
+[![ContentDB](https://content.minetest.net/packages/lazerbeak12345/sway/shields/downloads/)](https://content.minetest.net/packages/lazerbeak12345/sway/)
 [![Minetest Forums](https://img.shields.io/badge/Minetest_Forums-Sway-%234faf00?logo=minetest&labelColor=%23161616)](https://forum.minetest.net/viewtopic.php?t=29774)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![busted](https://github.com/Lazerbeak12345/sway-inv/actions/workflows/busted.yml/badge.svg)](https://github.com/Lazerbeak12345/sway-inv/actions/workflows/busted.yml)
