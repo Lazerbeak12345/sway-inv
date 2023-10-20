@@ -280,7 +280,7 @@ describe("context", function ()
 			sway.set_context(mock_playerref, ctx)
 			assert.equal(ctx, sway.get_or_create_context(mock_playerref))
 			assert.same("string", type(ctx.page))
-			assert.equal(mock_playerref, ctx.player)
+			assert.equal(mock_playerref:get_player_name(), ctx.player_name)
 			-- Clean the state
 			sway.set_context(mock_playerref)
 		end)

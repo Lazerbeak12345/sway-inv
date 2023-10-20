@@ -184,8 +184,8 @@ local function ensure_valid_context(player, ctx)
 	if not ctx.page then
 		ctx.page = sway.get_homepage_name(player)
 	end
-	if not ctx.player then
-		ctx.player = player
+	if not ctx.player_name then
+		ctx.player_name = player:get_player_name()
 	end
 end
 
@@ -210,7 +210,7 @@ function sway.get_player_and_context(player, context)
 		context = sway.get_or_create_context(player)
 	end
 	if not player then
-		player = context.player
+		player = minetest.get_player_by_name(context.player_name)
 	end
 	return player, context
 end
@@ -257,5 +257,5 @@ minetest.register_on_joinplayer(function(player)
 end)
 
 minetest.register_on_leaveplayer(function(player)
-	contexts[player:get_player_name()] = nil
+	sway.set_context(player)
 end)
