@@ -339,5 +339,86 @@ describe("context", function ()
 			sway.set_context(mock_playerref)
 		end)
 	end)
-	pending"get_player_and_context"
+	describe("get_player_and_context", function ()
+		it("is a function on sway", function ()
+			assert.same("function", type(sway.get_player_and_context))
+		end)
+		it("if context and player are provided, return them", function ()
+			local player, context = {}, {}
+			local r_player, r_context = sway.get_player_and_context(player, context)
+			assert.equals(player, r_player, "player is equal")
+			assert.equals(context, r_context, "context is equal")
+		end)
+		it("if only the player is provided, call get_or_create_context with the player", function ()
+			--TODO spy broke .... the workaround is fine
+			--spy(sway,"get_or_create_context")
+			local old_get_or_create_context = sway.get_or_create_context
+			local gocc_called_with ={}
+			sway.get_or_create_context = function (...)
+				gocc_called_with[#gocc_called_with+1] = {...}
+				return old_get_or_create_context(...)
+			end
+			local old_get_player_by_name = minetest.get_player_by_name
+			local player, i_context = {}, {}
+			local get_player_by_name_count = 0
+			minetest.get_player_by_name = function ()
+				assert(false, "player by name must not be called!")
+			end
+			local r_player, r_context
+			flow_extras.set_wrapped_context(i_context, function ()
+				r_player, r_context = sway.get_player_and_context(player)
+			end)
+			--assert.spy(sway.get_or_create_context).was.called_with(player)
+			assert.same({{player}}, gocc_called_with, "all args")
+			assert.equals(player, gocc_called_with[1][1], "first arg")
+			assert.equals(player, r_player, "player is equal")
+			assert.equals(i_context, r_context, "context is equal")
+			assert.equals(0, get_player_by_name_count, "we don't need to call this function")
+			sway.get_or_create_context = old_get_or_create_context
+			minetest.get_player_by_name = old_get_player_by_name
+		end)
+		it("if only the context is provided, return the player referenced by the context", function ()
+			local i_player, context = {}, {
+				player_name = "lazerbeak12345"
+			}
+			local old_get_player_by_name = minetest.get_player_by_name
+			local gpbn_calls = {}
+			minetest.get_player_by_name = function (...)
+				gpbn_calls[#gpbn_calls+1] = {...}
+				return i_player
+			end
+			local r_player, r_context = sway.get_player_and_context(nil, context)
+			assert.same({{"lazerbeak12345"}}, gpbn_calls)
+			assert.equals(i_player, r_player)
+			assert.equals(context, r_context)
+			minetest.get_player_by_name = old_get_player_by_name
+		end)
+		it("if neither args are provided, call get_or_create_context with nothing", function ()
+			local old_get_or_create_context = sway.get_or_create_context
+			local gocc_called_with ={}
+			sway.get_or_create_context = function (...)
+				gocc_called_with[#gocc_called_with+1] = {...}
+				return old_get_or_create_context(...)
+			end
+			local old_get_player_by_name = minetest.get_player_by_name
+			local i_player, i_context = {}, {
+				player_name = "lazerbeak12345"
+			}
+			local gpbn_calls = {}
+			minetest.get_player_by_name = function (...)
+				gpbn_calls[#gpbn_calls+1] = {...}
+				return i_player
+			end
+			local r_player, r_context
+			flow_extras.set_wrapped_context(i_context, function ()
+				r_player, r_context = sway.get_player_and_context()
+			end)
+			assert.same({{"lazerbeak12345"}}, gpbn_calls, "calls to get_player_by_name")
+			assert.same({{}}, gocc_called_with, "all args to get_or_create_context")
+			assert.equals(i_player, r_player, "player is equal")
+			assert.equals(i_context, r_context, "context is equal")
+			sway.get_or_create_context = old_get_or_create_context
+			minetest.get_player_by_name = old_get_player_by_name
+		end)
+	end)
 end)
