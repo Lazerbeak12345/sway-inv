@@ -12,6 +12,7 @@ local minetest = {
 	get_translator = ident(ident),
 	is_singleplayer = ident(true),
 	global_exists = ident(false),
+	log = nilfn
 }
 local function debug(...)
 	for _, item in ipairs{ ... } do
@@ -39,6 +40,12 @@ dofile"../flow/init.lua"
 dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
+local function fancy_stub(obj, name, callback)
+	local old = obj[name]
+	stub(obj, name)
+	callback(old)
+	obj[name] = old
+end
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
 local sway, flow_extras = sway, flow_extras
 describe("*basics*", function ()
@@ -134,13 +141,14 @@ describe("pages", function ()
 		end)
 		it("logs that a page is getting overriden", function ()
 			sway.register_page(testpagename, { get = function () end })
-			stub(minetest, "log")
-			sway.override_page(testpagename, {})
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] override_page: '" .. testpagename .. "' is becoming overriden"
-			)
-			assert.stub(minetest.log).was.called(1)
+			fancy_stub(minetest, "log", function ()
+				sway.override_page(testpagename, {})
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] override_page: '" .. testpagename .. "' is becoming overriden"
+				)
+				assert.stub(minetest.log).was.called(1)
+			end)
 		end)
 		it("copies all keys from the new def onto the old table", function ()
 			local def = { a = 1, b = 2, get = function () end }
@@ -157,16 +165,17 @@ describe("pages", function ()
 			local def = { get = function () end }
 			local override = { name = "sway:test2" }
 			sway.register_page(testpagename, def)
-			stub(minetest, "log")
-			sway.override_page(testpagename, override)
-			assert.same({
-				["sway:test2"] = def,
-			}, sway.pages)
-			assert.same({ def }, sway.pages_unordered)
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
-			)
+			fancy_stub(minetest, "log", function ()
+				sway.override_page(testpagename, override)
+				assert.same({
+					["sway:test2"] = def,
+				}, sway.pages)
+				assert.same({ def }, sway.pages_unordered)
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
+				)
+			end)
 		end)
 		it("requires overrides to name to be a string", function ()
 			sway.register_page(testpagename, { get = function () end})
@@ -216,7 +225,7 @@ describe("pages", function ()
 	end)
 	describe("get_homepage_name", function ()
 		it("is a function on sway", function ()
-			assert.equal("function", type(sway.get_homepage_name))
+			assert.same("function", type(sway.get_homepage_name))
 		end)
 		it("by default returns the crafting page", function ()
 			assert.same("sway:crafting", sway.get_homepage_name{}) -- This table is a mock of the player api
@@ -257,23 +266,24 @@ describe("context", function ()
 			end, "[sway] set_context: Requires a playerref")
 		end)
 		it("deletes the current context if it wasn't be provided", function ()
-			stub(minetest, "log")
-			sway.set_context(mock_playerref)
-			-- assert that it was logged to be deleted
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] set_context: deleting context for 'lazerbeak12345'"
-			)
-			assert.stub(minetest.log).was.called(1)
-			sway.get_or_create_context(mock_playerref)
-			-- assert that getting the context causes a new log item that it was created
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-			)
-			assert.stub(minetest.log).was.called(2)
-			-- delete it again to keep state clean. We know this works because we just asserted that it does.
-			sway.set_context(mock_playerref)
+			fancy_stub(minetest, "log", function ()
+				sway.set_context(mock_playerref)
+				-- assert that it was logged to be deleted
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] set_context: deleting context for 'lazerbeak12345'"
+				)
+				assert.stub(minetest.log).was.called(1)
+				sway.get_or_create_context(mock_playerref)
+				-- assert that getting the context causes a new log item that it was created
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+				)
+				assert.stub(minetest.log).was.called(2)
+				-- delete it again to keep state clean. We know this works because we just asserted that it does.
+				sway.set_context(mock_playerref)
+			end)
 		end)
 		it("ensures that the needed properties are present", function ()
 			local ctx = {}
@@ -305,32 +315,33 @@ describe("context", function ()
 		it("if context can't be found create a new one", function ()
 			-- Clean the state
 			sway.set_context(mock_playerref)
-			stub(minetest, "log")
-			local ctx = sway.get_or_create_context(mock_playerref)
-			assert.truthy(ctx, "It exsists at first.")
-			assert.stub(minetest.log).was.called(1)
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-			)
-			-- Clean the state again
-			sway.set_context(mock_playerref)
-			assert.stub(minetest.log).was.called(2)
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] set_context: deleting context for 'lazerbeak12345'"
-			)
-			local old_ctx = ctx
-			ctx = sway.get_or_create_context(mock_playerref)
-			assert.stub(minetest.log).was.called(3)
-			assert.stub(minetest.log).was.called_with(
-				"action",
-				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-			)
-			assert.truthy(ctx, "It still exsists")
-			assert.are_not.equal(ctx, old_ctx)
-			-- Clean the state at the end
-			sway.set_context(mock_playerref)
+			fancy_stub(minetest, "log", function ()
+				local ctx = sway.get_or_create_context(mock_playerref)
+				assert.truthy(ctx, "It exsists at first.")
+				assert.stub(minetest.log).was.called(1)
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+				)
+				-- Clean the state again
+				sway.set_context(mock_playerref)
+				assert.stub(minetest.log).was.called(2)
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] set_context: deleting context for 'lazerbeak12345'"
+				)
+				local old_ctx = ctx
+				ctx = sway.get_or_create_context(mock_playerref)
+				assert.stub(minetest.log).was.called(3)
+				assert.stub(minetest.log).was.called_with(
+					"action",
+					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+				)
+				assert.truthy(ctx, "It still exsists")
+				assert.are_not.equal(ctx, old_ctx)
+				-- Clean the state at the end
+				sway.set_context(mock_playerref)
+			end)
 		end)
 		it("return the context if it can be found", function ()
 			local ctx = {}
