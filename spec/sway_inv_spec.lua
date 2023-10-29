@@ -239,11 +239,62 @@ describe("pages", function ()
 			sway.get_homepage_name = old
 		end)
 		-- NOTE: Requires testing of the other stuff.... perhaps it should be tested from callsite instead
-		pending"is given the player object"
+		--pending"is given the player object"
 	end)
 	-- TODO do these after context
-	pending"set_page"
-	pending"get_page"
+	-- TODO: Horrible names. Should be get_page_name and set_page_by_name
+	describe("set_page", function ()
+		it("is a function on sway", function ()
+			assert.same("function", type(sway.set_page))
+		end)
+		pending"asserts that the pagename is a string"
+		-- This test actually found a bug in sfinv... It should assert before setting context.page
+		it("gets the current page, sets to the new page and asserts if the newpage is invalid", function ()
+			local old_pages = sway.pages
+			local old_get_or_create_context = sway.get_or_create_context
+			local ctx = {}
+			sway.pages = {}
+			sway.get_or_create_context = function ()
+				return ctx
+			end
+			assert.has_error(function ()
+				sway.set_page({}, "fake:page")
+			end, "[sway] set_page: Page not found: 'fake:page'")
+			assert.same({}, ctx)
+			sway.get_or_create_context = old_get_or_create_context
+			sway.pages = old_pages
+		end)
+		it("if the newpage is valid, calls set_player_inventory_formspec", function ()
+			local old_get_or_create_context = sway.get_or_create_context
+			local old_pages = sway.pages
+			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
+			local ctx = {}
+			local player = {}
+			sway.pages = { ["real:page"]={} }
+			sway.get_or_create_context = function ()
+				return ctx
+			end
+			local spif_calls = {}
+			sway.set_player_inventory_formspec = function (...)
+				spif_calls[#spif_calls+1] = {...}
+			end
+			sway.set_page(player, "real:page")
+			sway.get_or_create_context = old_get_or_create_context
+			sway.pages = old_pages
+			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
+			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+			assert.same({page = "real:page"}, ctx, "context")
+		end)
+		pending"if there's an on_leave funciton it calls it"
+		pending"if there's an on_enter function it calls it"
+	end)
+	describe("get_page", function ()
+		it("is a function on sway", function ()
+			assert.same("function", type(sway.get_page))
+		end)
+		pending"makes a call to get the context then returns it if falsy"
+		pending"if the context isn't falsy it returns the pagename"
+	end)
 end)
 describe("context", function ()
 	local mock_playerref = {

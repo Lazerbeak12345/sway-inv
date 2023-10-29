@@ -236,9 +236,9 @@ function sway.set_page(player, pagename)
 	if oldpage and oldpage.on_leave then
 		oldpage:on_leave(player, context)
 	end
-	context.page = pagename
 	local page = sway.pages[pagename]
-	assert(page, "[sway] Page was set to an invalid page")
+	assert(page, "[sway] set_page: Page not found: '".. pagename .."'")
+	context.page = pagename
 	if page.on_enter then
 		page:on_enter(player, context)
 	end
