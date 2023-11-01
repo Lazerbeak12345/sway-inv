@@ -247,8 +247,12 @@ describe("pages", function ()
 		it("is a function on sway", function ()
 			assert.same("function", type(sway.set_page))
 		end)
-		pending"asserts that the pagename is a string"
-		-- This test actually found a bug in sfinv... It should assert before setting context.page
+		it("asserts that the pagename is a string", function ()
+			assert.has_error(function ()
+				sway.set_page({ get_player_name = ident"playername" }, {})
+			end, "[sway] set_page: expected a string for the page name. Got a 'table'")
+		end)
+		-- TODO This test actually found a bug in sfinv... It should assert before setting context.page
 		it("gets the current page, sets to the new page and asserts if the newpage is invalid", function ()
 			local old_pages = sway.pages
 			local old_get_or_create_context = sway.get_or_create_context
@@ -285,7 +289,8 @@ describe("pages", function ()
 			assert.same({{player, ctx}}, spif_calls, "spif_calls")
 			assert.same({page = "real:page"}, ctx, "context")
 		end)
-		pending"if there's an on_leave funciton it calls it"
+		pending"if there's an on_leave function it calls it"
+		pending"on_leave is not called if the page is not found"
 		pending"if there's an on_enter function it calls it"
 	end)
 	describe("get_page", function ()
