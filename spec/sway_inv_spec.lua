@@ -241,7 +241,6 @@ describe("pages", function ()
 		-- NOTE: Requires testing of the other stuff.... perhaps it should be tested from callsite instead
 		--pending"is given the player object"
 	end)
-	-- TODO do these after context
 	-- TODO: Horrible names. Should be get_page_name and set_page_by_name
 	describe("set_page", function ()
 		it("is a function on sway", function ()
@@ -289,7 +288,39 @@ describe("pages", function ()
 			assert.same({{player, ctx}}, spif_calls, "spif_calls")
 			assert.same({page = "real:page"}, ctx, "context")
 		end)
-		pending"if there's an on_leave function it calls it"
+		it("if there's an on_leave function it calls it", function ()
+			-- TODO  should I use test composition for these tests? They're nearly exactly the same.
+			local old_get_or_create_context = sway.get_or_create_context
+			local old_pages = sway.pages
+			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
+			local ctx = {page = "old:page"}
+			local player = {}
+			local ol_calls = {}
+			local function on_leave(...)
+				ol_calls[#ol_calls+1] = {...}
+			end
+			local old_page = { on_leave = on_leave }
+			sway.pages = {
+				["old:page"]=old_page,
+				["real:page"]={}
+			}
+			sway.get_or_create_context = function ()
+				return ctx
+			end
+			local spif_calls = {}
+			sway.set_player_inventory_formspec = function (...)
+				spif_calls[#spif_calls+1] = {...}
+			end
+			sway.set_page(player, "real:page")
+			sway.get_or_create_context = old_get_or_create_context
+			sway.pages = old_pages
+			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
+			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+			assert.same({page = "real:page"}, ctx, "context")
+			assert.same({{old_page, player, ctx}}, ol_calls, "ol_calls")
+		end)
+		-- BUG: ⬇️ this is a bug in both sfinv and sway. Could cause the dynamically-typed equivelant of a double-free or a
+		--        use-after-free ⬇️
 		pending"on_leave is not called if the page is not found"
 		pending"if there's an on_enter function it calls it"
 	end)
