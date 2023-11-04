@@ -322,7 +322,33 @@ describe("pages", function ()
 		-- BUG: ⬇️ this is a bug in both sfinv and sway. Could cause the dynamically-typed equivelant of a double-free or a
 		--        use-after-free ⬇️
 		pending"on_leave is not called if the page is not found"
-		pending"if there's an on_enter function it calls it"
+		it("if there's an on_enter function it calls it", function ()
+			local old_get_or_create_context = sway.get_or_create_context
+			local old_pages = sway.pages
+			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
+			local ctx = {}
+			local player = {}
+			local oe_calls = {}
+			local function on_enter(...)
+				oe_calls[#oe_calls+1] = {...}
+			end
+			local new_page = { on_enter = on_enter }
+			sway.pages = { ["real:page"]= new_page }
+			sway.get_or_create_context = function ()
+				return ctx
+			end
+			local spif_calls = {}
+			sway.set_player_inventory_formspec = function (...)
+				spif_calls[#spif_calls+1] = {...}
+			end
+			sway.set_page(player, "real:page")
+			sway.get_or_create_context = old_get_or_create_context
+			sway.pages = old_pages
+			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
+			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+			assert.same({page = "real:page"}, ctx, "context")
+			assert.same({{new_page, player, ctx}}, oe_calls, "oe_calls")
+		end)
 	end)
 	describe("get_page", function ()
 		it("is a function on sway", function ()
