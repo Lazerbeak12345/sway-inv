@@ -251,7 +251,6 @@ describe("pages", function ()
 				sway.set_page({ get_player_name = ident"playername" }, {})
 			end, "[sway] set_page: expected a string for the page name. Got a 'table'")
 		end)
-		-- TODO This test actually found a bug in sfinv... It should assert before setting context.page
 		it("gets the current page, sets to the new page and asserts if the newpage is invalid", function ()
 			local old_pages = sway.pages
 			local old_get_or_create_context = sway.get_or_create_context
@@ -319,9 +318,27 @@ describe("pages", function ()
 			assert.same({page = "real:page"}, ctx, "context")
 			assert.same({{old_page, player, ctx}}, ol_calls, "ol_calls")
 		end)
-		-- BUG: ⬇️ this is a bug in both sfinv and sway. Could cause the dynamically-typed equivelant of a double-free or a
-		--        use-after-free ⬇️
-		pending"on_leave is not called if the page is not found"
+		it("on_leave is not called if the page is not found", function ()
+			local old_pages = sway.pages
+			local old_get_or_create_context = sway.get_or_create_context
+			local ctx = {page = "old:page"}
+			local ol_calls = {}
+			local function on_leave(...)
+				ol_calls[#ol_calls+1] = {...}
+			end
+			local old_page = { on_leave = on_leave }
+			sway.pages = { ["old:page"]=old_page }
+			sway.get_or_create_context = function ()
+				return ctx
+			end
+			assert.has_error(function ()
+				sway.set_page({}, "fake:page")
+			end, "[sway] set_page: Page not found: 'fake:page'")
+			assert.same({ page = "old:page" }, ctx, "context")
+			assert.same({}, ol_calls, "ol_calls")
+			sway.get_or_create_context = old_get_or_create_context
+			sway.pages = old_pages
+		end)
 		it("if there's an on_enter function it calls it", function ()
 			local old_get_or_create_context = sway.get_or_create_context
 			local old_pages = sway.pages

@@ -233,9 +233,6 @@ end
 function sway.set_page(player, pagename)
 	local context = sway.get_or_create_context(player)
 	local oldpage = sway.pages[context.page]
-	if oldpage and oldpage.on_leave then
-		oldpage:on_leave(player, context)
-	end
 	local type_pagename = type(pagename)
 	assert(
 		type_pagename == "string",
@@ -243,6 +240,9 @@ function sway.set_page(player, pagename)
 	)
 	local page = sway.pages[pagename]
 	assert(page, "[sway] set_page: Page not found: '".. pagename .."'")
+	if oldpage and oldpage.on_leave then
+		oldpage:on_leave(player, context)
+	end
 	context.page = pagename
 	if page.on_enter then
 		page:on_enter(player, context)
