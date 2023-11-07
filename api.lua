@@ -230,22 +230,23 @@ function sway.set_player_inventory_formspec(player, context)
 	sway.form:set_as_inventory_for(player, context or sway.get_or_create_context(player))
 end
 
-function sway.set_page(player, pagename)
+function sway.set_page(player, new_page_name)
 	local context = sway.get_or_create_context(player)
-	local oldpage = sway.pages[context.page]
-	local type_pagename = type(pagename)
+	local old_page = sway.pages[context.page]
+	local type_new_page_name = type(new_page_name)
 	assert(
-		type_pagename == "string",
-		"[sway] set_page: expected a string for the page name. Got a '" .. type_pagename .. "'"
+		type_new_page_name == "string",
+		"[sway] set_page: expected a string for the page name. Got a '" .. type_new_page_name .. "'"
 	)
-	local page = sway.pages[pagename]
-	assert(page, "[sway] set_page: Page not found: '".. pagename .."'")
-	if oldpage and oldpage.on_leave then
-		oldpage:on_leave(player, context)
+	local new_page = sway.pages[new_page_name]
+	assert(new_page, "[sway] set_page: Page not found: '".. new_page_name .."'")
+	-- We must be sure to assert all of the requirements before we take any action.
+	if old_page and old_page.on_leave then
+		old_page:on_leave(player, context)
 	end
-	context.page = pagename
-	if page.on_enter then
-		page:on_enter(player, context)
+	context.page = new_page_name
+	if new_page.on_enter then
+		new_page:on_enter(player, context)
 	end
 	sway.set_player_inventory_formspec(player, context)
 end
