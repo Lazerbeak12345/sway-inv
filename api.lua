@@ -252,8 +252,10 @@ function sway.set_page(player, new_page_name)
 end
 
 function sway.get_page(player)
-	local context = sway.get_or_create_context(player)
-	return context and context.page
+	-- We don't need to do any checks here because
+	-- 1. The context is guaranteed
+	-- 2. Page is guaranteed to either be truthy or be the result of sway.get_homepage_name(player)
+	return sway.get_or_create_context(player).page
 end
 
 minetest.register_on_joinplayer(function(player)

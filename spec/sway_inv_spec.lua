@@ -371,8 +371,20 @@ describe("pages", function ()
 		it("is a function on sway", function ()
 			assert.same("function", type(sway.get_page))
 		end)
-		pending"makes a call to get the context then returns it if falsy"
-		pending"if the context isn't falsy it returns the pagename"
+		it("makes a call to get the context then returns it if falsy", function ()
+			local old_get_or_create_context = sway.get_or_create_context
+			local gocc_called_with = {}
+			local ctx = { page = "page:name" }
+			local player = {234234}
+			sway.get_or_create_context = function (...)
+				gocc_called_with[# gocc_called_with+1] = {...}
+				return ctx
+			end
+			local ret = sway.get_page(player)
+			assert.same(gocc_called_with, {{player}}, "calls to get or get_or_create_context")
+			assert.same(ret, "page:name", "return value")
+			sway.get_or_create_context = old_get_or_create_context
+		end)
 	end)
 end)
 describe("context", function ()
