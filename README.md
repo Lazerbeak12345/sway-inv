@@ -360,6 +360,10 @@ When it's 100% clear that you are refering to Sway in the context of Minetest, c
 
 Otherwise, refer to it as either "Sway-inv" or "sway-inv".
 
+#### How do I ensure that my function overrides don't break anything?
+
+In the future I'll reconfigure my unittests to also support integration testing in this manner. Right now it's not really possible.
+
 ## Roadmap
 
 1. Full code coverage

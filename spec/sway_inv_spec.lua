@@ -1,3 +1,5 @@
+-- TODO: rewrite this file so a dependent mod developer can import this library as integration code. Once that's done
+-- add it to the FAQ in the README
 local function nilfn() end
 local function ident(v)
 	return function ()
@@ -39,6 +41,8 @@ _G.minetest = minetest -- Must be defined after formspec_ast runs
 dofile"../flow/init.lua"
 dofile"../flow-extras/init.lua"
 dofile"init.lua"
+local default_pages = sway.pages
+--local default_pages_unordered = sway.pages_unordered
 local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
 local function fancy_stub(obj, name, callback)
 	local old = obj[name]
@@ -573,5 +577,54 @@ describe("context", function ()
 			sway.get_or_create_context = old_get_or_create_context
 			minetest.get_player_by_name = old_get_player_by_name
 		end)
+	end)
+end)
+describe("default page", function ()
+	it("there's one default page", function ()
+		local count = 0
+		for _, _ in pairs(default_pages) do
+			count = count + 1
+		end
+		assert.equal(1, count)
+		assert.truthy(default_pages["sway:crafting"])
+	end)
+	-- This unit test doesn't test the _literal_ content of the form. Instead it tests by checking that the form has the
+	-- parts it needs.
+	it("the default page provides an overrideable function that returns a form", function ()
+		local row = default_pages["sway:crafting"].CraftingRow
+		assert.same("function", type(row), "CraftingRow is a function")
+		local render = row()
+		local sway_crafting_hbox = flow_extras.search{
+			tree = render,
+			key = "name",
+			value = "sway_crafting_hbox",
+			check_root = true
+		}()
+		assert.truthy(sway_crafting_hbox, "Contains sway_crafting_hbox")
+		assert.same("hbox", sway_crafting_hbox.type, "sway_crafting_hbox type")
+		do
+			local has_at_least_one_crafting_inventory = false
+			for crafting_inventory in flow_extras.search{
+				tree = sway_crafting_hbox,
+				key = "list_name",
+				value = "craft"
+			} do
+				has_at_least_one_crafting_inventory = true
+				assert.same("current_player", crafting_inventory.inventory_location, "location")
+			end
+			assert.True(has_at_least_one_crafting_inventory, "has_at_least_one_crafting_inventory")
+		end
+		do
+			local has_at_least_one_crafting_preview = false
+			for crafting_preview in flow_extras.search{
+				tree = sway_crafting_hbox,
+				key = "list_name",
+				value = "craftpreview"
+			} do
+				has_at_least_one_crafting_preview = true
+				assert.same("current_player", crafting_preview.inventory_location, "location")
+			end
+			assert.True(has_at_least_one_crafting_preview, "has_at_least_one_crafting_preview")
+		end
 	end)
 end)
