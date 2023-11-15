@@ -8,13 +8,19 @@ local function ident(v)
 end
 local minetest = {
 	register_on_player_receive_fields = nilfn,
-	register_on_joinplayer = nilfn,
-	register_on_leaveplayer = nilfn,
 	register_chatcommand = nilfn,
 	get_translator = ident(ident),
 	is_singleplayer = ident(true),
 	global_exists = ident(false),
-	log = nilfn
+	log = nilfn,
+	_register_on_leaveplayer_calls = {},
+	register_on_leaveplayer = function (...)
+		minetest._register_on_leaveplayer_calls[#minetest._register_on_leaveplayer_calls+1] = {...}
+	end,
+	_register_on_joinplayer_calls = {},
+	register_on_joinplayer = function (...)
+		minetest._register_on_joinplayer_calls[#minetest._register_on_joinplayer_calls+1] = {...}
+	end,
 }
 local function debug(...)
 	for _, item in ipairs{ ... } do
@@ -627,4 +633,58 @@ describe("default page", function ()
 			assert.True(has_at_least_one_crafting_preview, "has_at_least_one_crafting_preview")
 		end
 	end)
+end)
+-- tests for the API integration with Minetest, Flow and Flow-Extras (the tools this library is based upon)
+describe("Lower-Layer Integration", function ()
+	describe("sway.enabled", function ()
+		it("is a boolean on sway", function ()
+			assert.equal("boolean", type(sway.enabled))
+		end)
+		-- WARNING: This test would break integration test mode.
+		it("defaults to true", function ()
+			assert.True(sway.enabled)
+		end)
+	end)
+	--[[local olp_cb = function (...)
+		for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
+			args[1](...)
+		end
+	end]]
+	local ojp_cb = function (...)
+		for _, args in ipairs(minetest._register_on_joinplayer_calls) do
+			args[1](...)
+		end
+	end
+	describe("on_leaveplayer", function ()
+		it("does nothing if sway.enabled is false", function ()
+			local old_enabled = sway.enabled
+			sway.enabled = false
+			local old_spif = sway.set_player_inventory_formspec
+			local spjf_calls = {}
+			sway.set_player_inventory_formspec = function (...)
+				spjf_calls[#spjf_calls+1] = {...}
+			end
+			ojp_cb{}
+			sway.enabled = old_enabled
+			sway.set_player_inventory_formspec = old_spif
+			assert.same({}, spjf_calls)
+		end)
+		it("calls set_player_inventory_formspec if sway.enabled is true", function ()
+			local old_enabled = sway.enabled
+			sway.enabled = true
+			local old_spif = sway.set_player_inventory_formspec
+			local spjf_calls = {}
+			sway.set_player_inventory_formspec = function (...)
+				spjf_calls[#spjf_calls+1] = {...}
+			end
+			ojp_cb{"hi"}
+			sway.enabled = old_enabled
+			sway.set_player_inventory_formspec = old_spif
+			assert.same({{{"hi"}}}, spjf_calls)
+		end)
+	end)
+	pending"set_inventory_formspec"
+	pending"on_joinplayer"
+	-- TODO: can only be done after sway.get_form
+	pending"sway.form"
 end)
