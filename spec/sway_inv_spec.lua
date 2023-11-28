@@ -645,46 +645,52 @@ describe("Lower-Layer Integration", function ()
 			assert.True(sway.enabled)
 		end)
 	end)
-	--[[local olp_cb = function (...)
+	--[[
+	local onleaveplayer_cb = function (...)
 		for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
 			args[1](...)
 		end
 	end]]
-	local ojp_cb = function (...)
+	local onjoinplayer_cb = function (...)
 		for _, args in ipairs(minetest._register_on_joinplayer_calls) do
 			args[1](...)
 		end
 	end
+	local fakeplayer = {get_player_name=ident"fakeplayer"}
 	describe("on_leaveplayer", function ()
-		it("does nothing if sway.enabled is false", function ()
+		pending"calls set_context"
+	end)
+	describe("on_joinplayer", function ()
+		it("if sway is disabled, the callback does nothing", function ()
 			local old_enabled = sway.enabled
 			sway.enabled = false
 			local old_spif = sway.set_player_inventory_formspec
-			local spjf_calls = {}
+			local spif_calls = {}
 			sway.set_player_inventory_formspec = function (...)
-				spjf_calls[#spjf_calls+1] = {...}
+				spif_calls[#spif_calls+1] = {...}
 			end
-			ojp_cb{}
+			onjoinplayer_cb(fakeplayer)
 			sway.enabled = old_enabled
 			sway.set_player_inventory_formspec = old_spif
-			assert.same({}, spjf_calls)
+			assert.same({}, spif_calls)
 		end)
-		it("calls set_player_inventory_formspec if sway.enabled is true", function ()
+		it("if sway is enabled, it calls sway.set_player_inventory_formspec", function ()
 			local old_enabled = sway.enabled
 			sway.enabled = true
 			local old_spif = sway.set_player_inventory_formspec
-			local spjf_calls = {}
+			local spif_calls = {}
 			sway.set_player_inventory_formspec = function (...)
-				spjf_calls[#spjf_calls+1] = {...}
+				spif_calls[#spif_calls+1] = {...}
 			end
-			ojp_cb{"hi"}
+			onjoinplayer_cb(fakeplayer)
 			sway.enabled = old_enabled
 			sway.set_player_inventory_formspec = old_spif
-			assert.same({{{"hi"}}}, spjf_calls)
+			assert.same({{fakeplayer}}, spif_calls)
+			assert.equal(fakeplayer, spif_calls[1][1])
 		end)
 	end)
 	pending"set_inventory_formspec"
-	pending"on_joinplayer"
 	-- TODO: can only be done after sway.get_form
+	-- TODO: would be better placed in a different category
 	pending"sway.form"
 end)
