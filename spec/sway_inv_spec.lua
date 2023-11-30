@@ -645,12 +645,11 @@ describe("Lower-Layer Integration", function ()
 			assert.True(sway.enabled)
 		end)
 	end)
-	--[[
 	local onleaveplayer_cb = function (...)
 		for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
 			args[1](...)
 		end
-	end]]
+	end
 	local onjoinplayer_cb = function (...)
 		for _, args in ipairs(minetest._register_on_joinplayer_calls) do
 			args[1](...)
@@ -658,7 +657,16 @@ describe("Lower-Layer Integration", function ()
 	end
 	local fakeplayer = {get_player_name=ident"fakeplayer"}
 	describe("on_leaveplayer", function ()
-		pending"calls set_context"
+		it("calls set_context", function ()
+			local old_sc = sway.set_context
+			local sc_calls = {}
+			sway.set_context = function (...)
+				sc_calls[#sc_calls+1] = {...}
+			end
+			onleaveplayer_cb(fakeplayer)
+			sway.set_context = old_sc
+			assert.same({{fakeplayer}}, sc_calls)
+		end)
 	end)
 	describe("on_joinplayer", function ()
 		it("if sway is disabled, the callback does nothing", function ()
