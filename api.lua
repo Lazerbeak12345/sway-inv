@@ -227,7 +227,7 @@ function sway.set_context(player, context)
 end
 
 function sway.set_player_inventory_formspec(player, context)
-	sway.form:set_as_inventory_for(player, context or sway.get_or_create_context(player))
+	sway.form:set_as_inventory_for(sway.get_player_and_context(player, context))
 end
 
 function sway.set_page(player, new_page_name)

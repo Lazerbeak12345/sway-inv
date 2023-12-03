@@ -697,7 +697,41 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(fakeplayer, spif_calls[1][1])
 		end)
 	end)
-	pending"set_inventory_formspec"
+	describe("set_inventory_formspec", function ()
+		it("requires at least player or context", function ()
+			assert.has_error(function ()
+				sway.set_player_inventory_formspec()
+			end) -- Doesn't matter which error message. gpac has a good enough one.
+		end)
+		it("calls get_player_and_context to ensure both are gotten if possible", function ()
+			local p, x = {}, {}
+			local p1, x1 = {}, {} -- Doing this ensures that it's the return of gpac that is gotten later
+			local old_gpac = sway.get_player_and_context
+			local gpac_calls = {}
+			sway.get_player_and_context = function (...)
+				gpac_calls[#gpac_calls+1] = {...}
+				return p1, x1
+			end
+			-- INFO: This is likely to break since it's a private API
+			-- TODO: feature request that to be stable?
+			local sf_mti = getmetatable(sway.form).__index
+			local old_saif = sf_mti.set_as_inventory_for
+			local saif_calls = {}
+			sf_mti.set_as_inventory_for = function (...)
+				saif_calls[#saif_calls+1] = {...}
+			end
+			sway.set_player_inventory_formspec(p,x)
+			sway.get_player_and_context = old_gpac
+			sf_mti.set_as_inventory_for = old_saif
+			assert.equal(#gpac_calls, 1, "get_player_and_context")
+			assert.equal(gpac_calls[1][1], p, "get_player_and_context ctx")
+			assert.equal(gpac_calls[1][2], x, "get_player_and_context ctx")
+			assert.equal(#saif_calls, 1, "set_as_inventory_for")
+			-- First arg is a "self" arg, 2nd and 3rd matter
+			assert.equal(saif_calls[1][2], p1, "set_as_inventory_for p")
+			assert.equal(saif_calls[1][3], x1, "set_as_inventory_for x")
+		end)
+	end)
 	-- TODO: can only be done after sway.get_form
 	-- TODO: would be better placed in a different category
 	pending"sway.form"
