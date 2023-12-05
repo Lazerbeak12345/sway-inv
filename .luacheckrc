@@ -6,7 +6,8 @@ globals = {
 	'sway',
 	'dump',
 	'flow',
-	'flow_extras'
+	'flow_extras',
+	'formspec_ast'
 }
 
 --read_globals = {

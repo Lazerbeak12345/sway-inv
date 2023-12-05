@@ -21,6 +21,7 @@ local minetest = {
 	register_on_joinplayer = function (...)
 		minetest._register_on_joinplayer_calls[#minetest._register_on_joinplayer_calls+1] = {...}
 	end,
+	get_player_information = ident{}
 }
 local function debug(...)
 	for _, item in ipairs{ ... } do
@@ -57,7 +58,7 @@ local function fancy_stub(obj, name, callback)
 	obj[name] = old
 end
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
-local sway, flow_extras = sway, flow_extras
+local sway, flow_extras, formspec_ast = sway, flow_extras, formspec_ast
 describe("*basics*", function ()
 	it("doesn't error out when loading init.lua", function ()
 		assert(true, "by the time it got here it would have failed if it didn't work")
@@ -732,7 +733,29 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(saif_calls[1][3], x1, "set_as_inventory_for x")
 		end)
 	end)
-	-- TODO: can only be done after sway.get_form
-	-- TODO: would be better placed in a different category
-	pending"sway.form"
+	describe("sway.form", function ()
+		local function do_render(p,x)
+			return formspec_ast.parse(sway.form:render_to_formspec_string(p, x, true))
+		end
+		it("calls set_context to ensure the context is set per player", function ()
+			local old_sc = sway.set_context
+			local sc_calls = {}
+			sway.set_context = function (...)
+				sc_calls[#sc_calls+1] = {...}
+				assert(false,"this is a test designed to fail here")
+			end
+			local p, c = fakeplayer, {}
+			assert.has_error(function ()
+				do_render(p, c)
+			end)
+			sway.set_context = old_sc
+			assert.same(sc_calls, {{p, c}}, "calls")
+			assert.equal(sc_calls[1][1], p, "player")
+			assert.equal(sc_calls[1][2], c, "ctx")
+		end)
+		pending"calls flow_extras.set_wrapped_context to wrap the context"
+		pending"calls sway.get_form from inside the wrapped context"
+		pending"returns the form"
+		pending"calls insert_prepend if no_prepend is not set in the form"
+	end)
 end)
