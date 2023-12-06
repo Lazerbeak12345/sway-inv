@@ -753,8 +753,33 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(sc_calls[1][1], p, "player")
 			assert.equal(sc_calls[1][2], c, "ctx")
 		end)
-		pending"calls flow_extras.set_wrapped_context to wrap the context"
+		it("calls flow_extras.set_wrapped_context to wrap the context", function ()
+			local old_sc = sway.set_context
+			local sc_calls = {}
+			sway.set_context = function (...)
+				sc_calls[#sc_calls+1] = {...}
+			end
+			local old_swc = flow_extras.set_wrapped_context
+			local swc_calls = {}
+			flow_extras.set_wrapped_context = function (c, f)
+				swc_calls[#swc_calls+1] = {c, type(f)}
+				assert(false,"this is a test designed to fail here")
+			end
+			local p, c = fakeplayer, {}
+			assert.has_error(function ()
+				do_render(p, c)
+			end)
+			sway.set_context = old_sc
+			flow_extras.set_wrapped_context = old_swc
+			assert.same(sc_calls, {{p, c}}, "sc calls")
+			assert.equal(sc_calls[1][1], p, "sc player")
+			assert.equal(sc_calls[1][2], c, "sc ctx")
+			assert.same(swc_calls, {{c, "function"}}, "swc calls")
+			assert.equal(swc_calls[1][1], c, "swc ctx")
+			assert.same(swc_calls[1][2], "function", "swc function")
+		end)
 		pending"calls sway.get_form from inside the wrapped context"
+		pending"can get context via both flow and sway's get context tool"
 		pending"returns the form"
 		pending"calls insert_prepend if no_prepend is not set in the form"
 	end)
