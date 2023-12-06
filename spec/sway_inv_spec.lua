@@ -755,10 +755,7 @@ describe("Lower-Layer Integration", function ()
 		end)
 		it("calls flow_extras.set_wrapped_context to wrap the context", function ()
 			local old_sc = sway.set_context
-			local sc_calls = {}
-			sway.set_context = function (...)
-				sc_calls[#sc_calls+1] = {...}
-			end
+			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
 			local old_swc = flow_extras.set_wrapped_context
 			local swc_calls = {}
 			flow_extras.set_wrapped_context = function (c, f)
@@ -771,15 +768,32 @@ describe("Lower-Layer Integration", function ()
 			end)
 			sway.set_context = old_sc
 			flow_extras.set_wrapped_context = old_swc
-			assert.same(sc_calls, {{p, c}}, "sc calls")
-			assert.equal(sc_calls[1][1], p, "sc player")
-			assert.equal(sc_calls[1][2], c, "sc ctx")
 			assert.same(swc_calls, {{c, "function"}}, "swc calls")
 			assert.equal(swc_calls[1][1], c, "swc ctx")
 			assert.same(swc_calls[1][2], "function", "swc function")
 		end)
-		pending"calls sway.get_form from inside the wrapped context"
-		pending"can get context via both flow and sway's get context tool"
+		it("calls sway.get_form from inside the wrapped context", function ()
+			local old_sc = sway.set_context
+			sway.set_context = nilfn
+			local my_ex = sway.get_form
+			local gf_calls = {}
+			local gf_s_ctx
+			sway.get_form = function (...)
+				gf_calls[#gf_calls+1] = {...}
+				gf_s_ctx = sway.get_or_create_context()
+				assert(false,"this is a test designed to fail here")
+			end
+			local p, c = fakeplayer, {}
+			assert.has_error(function ()
+				do_render(p, c)
+			end)
+			sway.set_context = old_sc
+			sway.get_form = my_ex -- I guess the old_gf is the new_gf again 😆
+			assert.same(gf_calls, {{p, c}}, "gf_calls")
+			assert.equal(gf_calls[1][1], p, "gf_calls p")
+			assert.equal(gf_calls[1][2], c, "gf_calls c")
+			assert.equal(gf_s_ctx, c, "can get context from inside form")
+		end)
 		pending"returns the form"
 		pending"calls insert_prepend if no_prepend is not set in the form"
 	end)
