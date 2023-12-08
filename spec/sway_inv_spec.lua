@@ -743,12 +743,12 @@ describe("Lower-Layer Integration", function ()
 			local sc_calls = {}
 			sway.set_context = function (...)
 				sc_calls[#sc_calls+1] = {...}
-				assert(false,"this is a test designed to fail here")
+				error"this is a test designed to fail here"
 			end
 			local p, c = fakeplayer, {}
 			assert.has_error(function ()
 				do_render(p, c)
-			end)
+			end, "this is a test designed to fail here")
 			sway.set_context = old_sc
 			assert.same(sc_calls, {{p, c}}, "calls")
 			assert.equal(sc_calls[1][1], p, "player")
@@ -761,12 +761,12 @@ describe("Lower-Layer Integration", function ()
 			local swc_calls = {}
 			flow_extras.set_wrapped_context = function (c, f)
 				swc_calls[#swc_calls+1] = {c, type(f)}
-				assert(false,"this is a test designed to fail here")
+				error"this is a test designed to fail here"
 			end
 			local p, c = fakeplayer, {}
 			assert.has_error(function ()
 				do_render(p, c)
-			end)
+			end, "this is a test designed to fail here")
 			sway.set_context = old_sc
 			flow_extras.set_wrapped_context = old_swc
 			assert.same(swc_calls, {{c, "function"}}, "swc calls")
@@ -782,12 +782,12 @@ describe("Lower-Layer Integration", function ()
 			sway.get_form = function (...)
 				gf_calls[#gf_calls+1] = {...}
 				gf_s_ctx = sway.get_or_create_context()
-				assert(false,"this is a test designed to fail here")
+				error"this is a test designed to fail here"
 			end
 			local p, c = fakeplayer, {}
 			assert.has_error(function ()
 				do_render(p, c)
-			end)
+			end, "this is a test designed to fail here")
 			sway.set_context = old_sc
 			sway.get_form = my_ex -- I guess the old_gf is the new_gf again 😆
 			assert.same(gf_calls, {{p, c}}, "gf_calls")
