@@ -818,6 +818,37 @@ describe("Lower-Layer Integration", function ()
 				}
 			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
 		end)
-		pending"calls insert_prepend if no_prepend is not set in the form"
+		it("calls insert_prepend if no_prepend is not set in the form", function ()
+			local old_sc = sway.set_context
+			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
+			local ip = sway.insert_prepend
+			local ip_calls = {}
+			sway.insert_prepend = function (...)
+				ip_calls[#ip_calls+1] = {...}
+				return ...
+			end
+			local my_ex = sway.get_form
+			local form = gui.VBox{no_prepend=false, gui.Label{label="I am a label!"}}
+			sway.get_form = function ()
+				return form
+			end
+			local p, c = fakeplayer, {}
+			local form_ret = do_render(p, c)
+			sway.set_context = old_sc
+			sway.get_form = my_ex
+			sway.insert_prepend = ip
+			assert.same({
+				formspec_version = 1,
+				gui.Container{
+					x = .3, y = .3,
+					gui.Label{
+						x = 0, y = 0.2,
+						label="I am a label!"
+					}
+				}
+			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
+			assert.same(ip_calls, {{form}})
+			assert.equal(ip_calls[1][1], form)
+		end)
 	end)
 end)
