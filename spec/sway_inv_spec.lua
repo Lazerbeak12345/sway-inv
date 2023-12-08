@@ -23,7 +23,7 @@ local minetest = {
 	end,
 	get_player_information = ident{}
 }
-local function debug(...)
+local function stupid_dump(...)
 	for _, item in ipairs{ ... } do
 		print"{"
 		for key, value in pairs(item) do
@@ -33,7 +33,7 @@ local function debug(...)
 	end
 	return ...
 end
-assert(debug) -- Hack to make it so I don't have to ignore that this function is usually unused.
+assert(stupid_dump) -- Hack to make it so I don't have to ignore that this function is usually unused.
 local FORMSPEC_AST_PATH = '../formspec_ast'
 _G.FORMSPEC_AST_PATH = FORMSPEC_AST_PATH
 function minetest.get_modpath(modname)
@@ -58,7 +58,8 @@ local function fancy_stub(obj, name, callback)
 	obj[name] = old
 end
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
-local sway, flow_extras, formspec_ast = sway, flow_extras, formspec_ast
+local sway, flow_extras, formspec_ast, flow = sway, flow_extras, formspec_ast, flow
+local gui = flow.widgets
 describe("*basics*", function ()
 	it("doesn't error out when loading init.lua", function ()
 		assert(true, "by the time it got here it would have failed if it didn't work")
@@ -735,7 +736,7 @@ describe("Lower-Layer Integration", function ()
 	end)
 	describe("sway.form", function ()
 		local function do_render(p,x)
-			return formspec_ast.parse(sway.form:render_to_formspec_string(p, x, true))
+			return formspec_ast.parse(sway.form:render_to_formspec_string(p, x, false))
 		end
 		it("calls set_context to ensure the context is set per player", function ()
 			local old_sc = sway.set_context
@@ -794,7 +795,29 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(gf_calls[1][2], c, "gf_calls c")
 			assert.equal(gf_s_ctx, c, "can get context from inside form")
 		end)
-		pending"returns the form"
+		it("returns the form", function ()
+			local old_sc = sway.set_context
+			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
+			local my_ex = sway.get_form
+			local form = gui.VBox{no_prepend=true, gui.Label{label="I am a label!"}}
+			sway.get_form = function ()
+				return form
+			end
+			local p, c = fakeplayer, {}
+			local form_ret = do_render(p, c)
+			sway.set_context = old_sc
+			sway.get_form = my_ex
+			assert.same({
+				formspec_version = 1,
+				gui.Container{
+					x = .3, y = .3,
+					gui.Label{
+						x = 0, y = 0.2,
+						label="I am a label!"
+					}
+				}
+			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
+		end)
 		pending"calls insert_prepend if no_prepend is not set in the form"
 	end)
 end)
