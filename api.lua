@@ -94,7 +94,7 @@ local spacing = 0.25 -- TODO
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"
-	table.insert(gui, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
+	table.insert(widget, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
 end
 function sway.Form(fields)
 	local show_inv = fields.show_inv

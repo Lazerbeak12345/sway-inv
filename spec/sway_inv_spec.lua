@@ -852,3 +852,17 @@ describe("Lower-Layer Integration", function ()
 		end)
 	end)
 end)
+describe("content functions", function ()
+	it("insert_prepend", function ()
+		-- Simple enough that a snapshot should be fine.
+		assert.same({
+			no_prepend = true,
+			bgcolor = "#0000",
+			gui.StyleType{ selectors = { "list" }, props = { spacing = 0.25 } }
+		}, sway.insert_prepend{})
+	end)
+	pending"NavGui"
+	pending"Form"
+	pending"InventoryTiles"
+	pending"get_form"
+end)
