@@ -863,7 +863,21 @@ describe("content functions", function ()
 			gui.StyleType{ selectors = { "list" }, props = { spacing = 0.25 } }
 		}, elm)
 	end)
-	pending"NavGui"
+	describe("NavGui", function ()
+		it("requires fields", function ()
+			assert.has_error(function ()
+				sway.NavGui()
+			end, "[sway] NavGui: requires field table.")
+			assert.has_error(function ()
+				sway.NavGui(false)
+			end, "[sway] NavGui: requires field table.")
+		end)
+		pending"requires nav_titles to be a table"
+		pending"requires current_idx to be a number"
+		pending"returns nil if nav_titles is empty"
+		pending"contains a tabheader of certian description"
+		pending"tabheader event calls set_page"
+	end)
 	pending"Form"
 	pending"InventoryTiles"
 	pending"get_form"

@@ -41,6 +41,7 @@ function sway.override_page(name, def)
 end
 
 function sway.NavGui(fields)
+	assert(type(fields) == "table", "[sway] NavGui: requires field table.")
 	local nav_titles = fields.nav_titles
 	local current_idx = fields.current_idx
 	if #nav_titles > 1 then
