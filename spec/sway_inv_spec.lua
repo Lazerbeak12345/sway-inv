@@ -908,7 +908,25 @@ describe("content functions", function ()
 			assert.equal(match.current_tab, args.current_idx, "index")
 			assert.truthy(match.on_event, "event")
 		end)
-		pending"tabheader event calls set_page"
+		it("tabheader event calls set_page", function ()
+			local args = { nav_titles = { "title", "next page" }, current_idx = 1 }
+			local match = flow_extras.search{
+				tree = sway.NavGui(args),
+				value = "tabheader"
+			}()
+			local sp = sway.set_page
+			local sp_calls = {}
+			sway.set_page = function (...)
+				sp_calls[#sp_calls+1] = {...}
+			end
+			local p, x = {}, { nav = { a = "asdfasdf" }, form = { sway_nav_tabs = "a" } }
+			local ret = match.on_event(p, x)
+			sway.set_page = sp
+			assert.truthy(match, "tabheader was found")
+			assert.is_nil(ret, "ret")
+			assert.same({{p, "asdfasdf"}}, sp_calls, "all calls")
+			assert.equal(sp_calls[1][1], p, "first arg")
+		end)
 	end)
 	pending"Form"
 	pending"InventoryTiles"
