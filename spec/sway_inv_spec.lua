@@ -896,7 +896,18 @@ describe("content functions", function ()
 			local ret = sway.NavGui{ nav_titles = { "title" }, current_idx = 1 }
 			assert.same(gui.Nil{}, ret)
 		end)
-		pending"contains a tabheader of certian description"
+		it("contains a tabheader of certian description", function ()
+			local args = { nav_titles = { "title", "next page" }, current_idx = 1 }
+			local match = flow_extras.search{
+				tree = sway.NavGui(args),
+				value = "tabheader"
+			}()
+			assert.truthy(match, "tabheader was found")
+			assert.equal(match.name, "sway_nav_tabs")
+			assert.equal(match.captions, args.nav_titles, "titles")
+			assert.equal(match.current_tab, args.current_idx, "index")
+			assert.truthy(match.on_event, "event")
+		end)
 		pending"tabheader event calls set_page"
 	end)
 	pending"Form"
