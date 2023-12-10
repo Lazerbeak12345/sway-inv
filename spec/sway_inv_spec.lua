@@ -888,7 +888,14 @@ describe("content functions", function ()
 				sway.NavGui{ current_idx = false, nav_titles = {} }
 			end, "[sway] NavGui: requires requires current_idx to be a number.")
 		end)
-		pending"returns nil if nav_titles is empty"
+		it("returns nil if nav_titles is empty", function ()
+			local ret = sway.NavGui{ nav_titles = {}, current_idx = -1 }
+			assert.same(gui.Nil{}, ret)
+		end)
+		it("returns nil if nav_titles is one-long", function ()
+			local ret = sway.NavGui{ nav_titles = { "title" }, current_idx = 1 }
+			assert.same(gui.Nil{}, ret)
+		end)
 		pending"contains a tabheader of certian description"
 		pending"tabheader event calls set_page"
 	end)
