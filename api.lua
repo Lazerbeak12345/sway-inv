@@ -45,6 +45,7 @@ function sway.NavGui(fields)
 	local nav_titles = fields.nav_titles
 	assert(type(nav_titles) == "table", "[sway] NavGui: requires requires nav_titles to be a table.")
 	local current_idx = fields.current_idx
+	assert(type(current_idx) == "number", "[sway] NavGui: requires requires current_idx to be a number.")
 	if #nav_titles > 1 then
 		return gui.HBox{
 			gui.Spacer{ expand = false, w = .2 },
