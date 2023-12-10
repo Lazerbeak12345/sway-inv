@@ -872,7 +872,14 @@ describe("content functions", function ()
 				sway.NavGui(false)
 			end, "[sway] NavGui: requires field table.")
 		end)
-		pending"requires nav_titles to be a table"
+		it("requires nav_titles to be a table", function ()
+			assert.has_error(function ()
+				sway.NavGui{ current_idx = 1 }
+			end, "[sway] NavGui: requires requires nav_titles to be a table.")
+			assert.has_error(function ()
+				sway.NavGui{ current_idx = 1, nav_titles = false }
+			end, "[sway] NavGui: requires requires nav_titles to be a table.")
+		end)
 		pending"requires current_idx to be a number"
 		pending"returns nil if nav_titles is empty"
 		pending"contains a tabheader of certian description"

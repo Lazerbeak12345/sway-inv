@@ -43,6 +43,7 @@ end
 function sway.NavGui(fields)
 	assert(type(fields) == "table", "[sway] NavGui: requires field table.")
 	local nav_titles = fields.nav_titles
+	assert(type(nav_titles) == "table", "[sway] NavGui: requires requires nav_titles to be a table.")
 	local current_idx = fields.current_idx
 	if #nav_titles > 1 then
 		return gui.HBox{
