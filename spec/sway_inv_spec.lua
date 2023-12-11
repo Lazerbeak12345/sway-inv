@@ -968,7 +968,37 @@ describe("content functions", function ()
 				current_idx = 3
 			}}}, NG_calls, "NG")
 		end)
-		pending"show_inv field option includes the inv and the option is not exported"
+		it("show_inv field option includes the inv and the option is not exported", function ()
+			local NG = sway.NavGui
+			local NG_calls = {}
+			sway.NavGui = function (...)
+				NG_calls[#NG_calls+1] = {...}
+				return gui.Nil{}
+			end
+			local IT = sway.InventoryTiles
+			local IT_calls = {}
+			sway.InventoryTiles = function (...)
+				IT_calls[#IT_calls+1] = {...}
+			end
+			local gocc = sway.get_or_create_context
+			sway.get_or_create_context = function ()
+				return { nav_titles = {"the title"}, nav_idx = 3 }
+			end
+			local ret = sway.Form{ show_inv = true, gui.Box{} }
+			local match = flow_extras.search{
+				tree = ret,
+				value = "box"
+			}()
+			sway.NavGui = NG
+			sway.InventoryTiles = IT
+			sway.get_or_create_context = gocc
+			assert.same({{}}, IT_calls, "IT")
+			assert.truthy(match, "box")
+			assert.same({{{
+				nav_titles = {"the title"},
+				current_idx = 3
+			}}}, NG_calls, "NG")
+		end)
 	end)
 	pending"InventoryTiles"
 	pending"get_form"
