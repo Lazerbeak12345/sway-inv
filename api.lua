@@ -100,6 +100,7 @@ function sway.insert_prepend(widget)
 	table.insert(widget, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
 end
 function sway.Form(fields)
+	assert(type(fields) == "table", "[sway] Form: requires field table.")
 	local show_inv = fields.show_inv
 	fields.show_inv = nil
 

@@ -928,7 +928,18 @@ describe("content functions", function ()
 			assert.equal(sp_calls[1][1], p, "first arg")
 		end)
 	end)
-	pending"Form"
+	describe("Form", function ()
+		it("requires fields", function ()
+			assert.has_error(function ()
+				sway.Form()
+			end, "[sway] Form: requires field table.")
+			assert.has_error(function ()
+				sway.Form(false)
+			end, "[sway] Form: requires field table.")
+		end)
+		pending"contains NavGui and the field children but not inv"
+		pending"show_inv field option includes the inv and the option is not exported"
+	end)
 	pending"InventoryTiles"
 	pending"get_form"
 end)
