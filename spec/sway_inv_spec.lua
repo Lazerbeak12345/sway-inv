@@ -1000,6 +1000,68 @@ describe("content functions", function ()
 			}}}, NG_calls, "NG")
 		end)
 	end)
-	pending"InventoryTiles"
+	describe("InventoryTiles", function ()
+		it("with w and h of 1, contains certian elements", function ()
+			local feL = flow_extras.List
+			local feL_calls = {}
+			flow_extras.List = function (...)
+				feL_calls[#feL_calls+1] = {...}
+				return { "asdf" }
+			end
+			local ret = sway.InventoryTiles{ w = 1, h = 1 }
+			flow_extras.List = feL
+			assert.same({{{
+				align_h = "center",
+				inventory_location = "current_player",
+				list_name = "main",
+				w = 1, h = 1,
+				bgimg = "sway_hb_bg.png",
+			}}}, feL_calls, "calls")
+			assert.same(gui.VBox{
+				align_v = "end",
+				expand = true,
+				{ "asdf" },
+				gui.Nil{}
+			}, ret, "ret")
+		end)
+		it("default w and h", function ()
+			local feL = flow_extras.List
+			local feL_calls = {}
+			flow_extras.List = function (...)
+				feL_calls[#feL_calls+1] = {...}
+				return { "asdfaa", #feL_calls }
+			end
+			local ret = sway.InventoryTiles{}
+			flow_extras.List = feL
+			assert.same({
+				{{
+					align_h = "center",
+					inventory_location = "current_player",
+					list_name = "main",
+					w = 8, h = 1,
+					bgimg = "sway_hb_bg.png"
+				}},
+				{{
+					align_h = "center",
+					inventory_location = "current_player",
+					list_name = "main",
+					w = 8, h = 3,
+					starting_item_index = 8
+				}}
+			}, feL_calls, "calls")
+			assert.same(gui.VBox{
+				align_v = "end",
+				expand = true,
+				{ "asdfaa", 1 },
+				{ "asdfaa", 2 }
+			}, ret, "ret")
+		end)
+		it("falls back with fields", function ()
+			assert.same(
+				sway.InventoryTiles{},
+				sway.InventoryTiles()
+			)
+		end)
+	end)
 	pending"get_form"
 end)
