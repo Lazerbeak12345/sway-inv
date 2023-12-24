@@ -1063,5 +1063,30 @@ describe("content functions", function ()
 			)
 		end)
 	end)
-	pending"get_form"
+	describe("get_form", function ()
+		it("calls get_player_and_context", function ()
+			local old_gpac = sway.get_player_and_context
+			local gpac_calls = {}
+			sway.get_player_and_context = function (...)
+				gpac_calls[#gpac_calls+1] = {...}
+				error"halt execution here to ensure this is called"
+			end
+			local p, x = {}, {}
+			assert.has_error(function ()
+				sway.get_form(p,x)
+			end, "halt execution here to ensure this is called")
+			sway.get_player_and_context = old_gpac
+			assert.same({{p, x}}, gpac_calls, "args")
+			assert.equal(p, gpac_calls[1][1], "player arg")
+			assert.equal(x, gpac_calls[1][2], "ctx arg")
+		end)
+		pending"returns result of get for found page"
+		describe("navigation loop", function ()
+			pending"calls is_in_nav for all pages where it is defined, in order, in sway.pages_all_ordered"
+			pending"adds the page info if is_in_nav is undefined or returns true"
+			pending"sets the current_idx to the correct page"
+		end)
+		pending"returns result of get for sway.page['404'] when page not found, and 404 is truthy"
+		pending"when page is not found"
+	end)
 end)
