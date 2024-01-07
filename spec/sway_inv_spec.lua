@@ -1080,7 +1080,33 @@ describe("content functions", function ()
 			assert.equal(p, gpac_calls[1][1], "player arg")
 			assert.equal(x, gpac_calls[1][2], "ctx arg")
 		end)
-		pending"returns result of get for found page"
+		it("returns result of get for found page", function ()
+			local old_gpac = sway.get_player_and_context
+			sway.get_player_and_context = function (...)
+				return ...
+			end
+			local old_pu = sway.pages_unordered
+			local old_p = sway.pages
+			local pagename = "asdfasdf"
+			local pageContent = {}
+			local called = 0
+			local example_page = { name = pagename, get = function ()
+				called = called + 1
+				return pageContent
+			end }
+			sway.pages_unordered = {
+				example_page
+			}
+			sway.pages = {}
+			sway.pages[pagename] = example_page
+			local p, x = {}, { page = pagename }
+			local ret = sway.get_form(p,x)
+			sway.get_player_and_context = old_gpac
+			sway.pages_unordered = old_pu
+			sway.pages = old_p
+			assert.equal(pageContent, ret, "returns expected page")
+			assert.equal(1, called, "Called thingy")
+		end)
 		describe("navigation loop", function ()
 			pending"calls is_in_nav for all pages where it is defined, in order, in sway.pages_all_ordered"
 			pending"adds the page info if is_in_nav is undefined or returns true"
