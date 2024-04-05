@@ -11,7 +11,9 @@ local minetest = {
 	register_chatcommand = nilfn,
 	get_translator = ident(ident),
 	is_singleplayer = ident(true),
-	global_exists = ident(false),
+	global_exists = function (name)
+		return _G[name] ~= nil
+	end,
 	log = nilfn,
 	_register_on_leaveplayer_calls = {},
 	register_on_leaveplayer = function (...)
@@ -850,6 +852,49 @@ describe("Lower-Layer Integration", function ()
 			assert.same(ip_calls, {{form}})
 			assert.equal(ip_calls[1][1], form)
 		end)
+	end)
+	-- The first horseman of bloated inventory mods, the component that forces you to use it, even when others are present.
+	describe("__conqueror", function ()
+		-- It is recognised by several features:
+		-- It disables the one good inventory mod, whos only weakness is an affixment to the past,
+		-- leaving it featureless and permanantly obsolete
+		it("slays the simple one", function ()
+			_G.sfinv = {}
+			sway.__conqueror();
+			assert.equal(type(_G.sfinv.set_player_inventory_formspec), "function")
+			assert.same(
+				_G.sfinv.enabled,
+				false,
+				"Note how sfinv has already accepted its sad fate,"..
+				" the Internet Explorer of inventory mods,"..
+				" forever relegated to its solitary station as the doormat.\n" ..
+				"No other mod is so self-aware of its flaws than the soldier you witness here." ..
+				" Unlike his foes, he listens the first time when you say, 'please move,' and dutifully does so." ..
+				" He knows his sad fate. He will become disabled in the line of duty. That he still serves is honor."
+			)
+		end)
+		-- It disables the one mod everyone seems to enjoy, genuinely adding features people take for granted, but also is
+		-- known to be brittle
+		it("causes the slow and ugly one to stumble", function ()
+			_G.unified_inventory = {}
+			sway.__conqueror();
+			assert.equal(type(_G.unified_inventory.set_inventory_formspec), "function")
+		end)
+		-- And last, it disables the very mod that was so poorly (over)engineered, it inspired sway, a post-ironic parody of
+		-- all Minetest inventory mods, mostly just ones that try to recreate the average post-millenium RPG inventory
+		-- "experience." If I wanted to play Xenoblade Cronicles X, I would have purchased a Nintendo account by now.
+		it("encumberes the vain one", function ()
+			_G.i3 = {}
+			sway.__conqueror();
+			assert.equal(type(_G.i3.set_fs), "function")
+		end)
+		-- Perhaps it should be mentioned. There's several I haven't disabled. This is for two reasons.
+		--
+		-- 1. The mod is better than this mod.
+		-- 2. The mod is under a licence that would prevent me from doing so (legally).
+		-- 3. The mod is so unused, it's not worth the effort.
+		--
+		-- One of these reasons is a lie, and the other two tell only the truth. I refuse to clarify.
 	end)
 end)
 describe("content functions", function ()
