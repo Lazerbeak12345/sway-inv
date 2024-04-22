@@ -245,7 +245,7 @@ Members of the `sway` global
 | Key | Type | Description |
 | :-- | :--- | :---------- |
 | `pages` | `table` | Table of pages by pagename. (see `sway.override_page`) |
-| `pages_unordered` | `table` | Table of pages indexed by order of registration, used to build navigation tabs. |
+| `pages_ordered` | `table` | Table of pages indexed by order of registration, used to build navigation tabs. |
 | `enabled` | `boolean` | Defaults to `true`. Set to false to disable the entire mod. Good for other inventory mods. |
 | | | Anything from the above documentation |
 

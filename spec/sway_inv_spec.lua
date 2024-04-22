@@ -1,6 +1,6 @@
 -- TODO: rewrite this file so a dependent mod developer can import this library as integration code. Once that's done
 -- add it to the FAQ in the README
-local function nilfn() end
+local function nilfn(...) local _={...} end -- By saving the args here, we get rid of a TON of false positive warnings
 local function ident(v)
 	return function ()
 		return v
@@ -47,11 +47,12 @@ function minetest.get_modpath(modname)
 end
 dofile(FORMSPEC_AST_PATH .. '/init.lua')
 _G.minetest = minetest -- Must be defined after formspec_ast runs
+_G.dump = ident"{ a dumped value would go here }";
 dofile"../flow/init.lua"
 dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local default_pages = sway.pages
---local default_pages_unordered = sway.pages_unordered
+--local default_pages_ordered = sway.pages_ordered
 local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
 local function fancy_stub(obj, name, callback)
 	local old = obj[name]
@@ -74,7 +75,7 @@ describe("pages", function ()
 	local testpagename = "sway:test"
 	before_each(function()
 		sway.pages = {}
-		sway.pages_unordered = {}
+		sway.pages_ordered = {}
 	end)
 	describe("register_page", function ()
 		it("is a function on sway", function ()
@@ -116,12 +117,12 @@ describe("pages", function ()
 				sway.register_page(testpagename, { get = function () end })
 			end, "[sway] register_page: page '" .. testpagename .. "' must not already be registered")
 		end)
-		it("inserts name into def, puts def into pages as key and pages_unordered", function ()
+		it("inserts name into def, puts def into pages as key and pages_ordered", function ()
 			local def = { get = function () end }
 			sway.register_page(testpagename, def)
 			assert.equals(testpagename, def.name)
 			assert.equals(def, sway.pages[testpagename])
-			assert.equals(def, sway.pages_unordered[1])
+			assert.equals(def, sway.pages_ordered[1])
 		end)
 	end)
 	describe("override_page", function ()
@@ -184,7 +185,7 @@ describe("pages", function ()
 				assert.same({
 					["sway:test2"] = def,
 				}, sway.pages)
-				assert.same({ def }, sway.pages_unordered)
+				assert.same({ def }, sway.pages_ordered)
 				assert.stub(minetest.log).was.called_with(
 					"action",
 					"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
@@ -222,19 +223,19 @@ describe("pages", function ()
 			assert.equal(def2, sway.pages[testpagename .. "1"])
 		end)
 	end)
-	describe("pages_unordered", function ()
+	describe("pages_ordered", function ()
 		-- TODO isn't this a pointless assertion?
 		it("is a table on sway", function ()
-			assert.equal("table", type(sway.pages_unordered))
+			assert.equal("table", type(sway.pages_ordered))
 		end)
 		it("register_page adds to this table by order registered", function ()
 			local def = { get = function () end }
 			sway.register_page(testpagename, def)
 			local def2 = { get = function () end }
 			sway.register_page(testpagename .. "1", def2)
-			assert.same({ def, def2 }, sway.pages_unordered)
-			assert.equal(def, sway.pages_unordered[1])
-			assert.equal(def2, sway.pages_unordered[2])
+			assert.same({ def, def2 }, sway.pages_ordered)
+			assert.equal(def, sway.pages_ordered[1])
+			assert.equal(def2, sway.pages_ordered[2])
 		end)
 	end)
 	describe("get_homepage_name", function ()
@@ -1130,7 +1131,7 @@ describe("content functions", function ()
 			sway.get_player_and_context = function (...)
 				return ...
 			end
-			local old_pu = sway.pages_unordered
+			local old_pu = sway.pages_ordered
 			local old_p = sway.pages
 			local pagename = "asdfasdf"
 			local pageContent = {}
@@ -1139,7 +1140,7 @@ describe("content functions", function ()
 				called = called + 1
 				return pageContent
 			end }
-			sway.pages_unordered = {
+			sway.pages_ordered = {
 				example_page
 			}
 			sway.pages = {}
@@ -1147,13 +1148,51 @@ describe("content functions", function ()
 			local p, x = {}, { page = pagename }
 			local ret = sway.get_form(p,x)
 			sway.get_player_and_context = old_gpac
-			sway.pages_unordered = old_pu
+			sway.pages_ordered = old_pu
 			sway.pages = old_p
 			assert.equal(pageContent, ret, "returns expected page")
 			assert.equal(1, called, "Called thingy")
 		end)
 		describe("navigation loop", function ()
-			pending"calls is_in_nav for all pages where it is defined, in order, in sway.pages_all_ordered"
+			it("calls is_in_nav for all pages where it is defined, in order, in sway.pages_ordered", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				local pagename = "asdfasdf"
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local p, x = {}, { page = pagename..1 }
+				local calls = {}
+				for i = 1, 5 do
+					sway.register_page(pagename..i,{
+						get = function ()
+							return gui.Nil{}
+						end,
+						actualOrder=i,
+						is_in_nav = function (self, ip, ix)
+							calls[#calls+1] = {
+								order = self.actualOrder,
+								ip = p == ip,
+								ix = x == ix,
+							}
+						end
+					})
+				end
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				assert.same(calls, {
+					{ order = 1, ip = true, ix = true},
+					{ order = 2, ip = true, ix = true},
+					{ order = 3, ip = true, ix = true},
+					{ order = 4, ip = true, ix = true},
+					{ order = 5, ip = true, ix = true},
+				}, "called correctly")
+			end)
 			pending"adds the page info if is_in_nav is undefined or returns true"
 			pending"sets the current_idx to the correct page"
 		end)

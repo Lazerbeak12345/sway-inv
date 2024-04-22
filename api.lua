@@ -1,6 +1,6 @@
 local minetest, dump, flow, sway, flow_extras = minetest, dump, flow, sway, flow_extras
 sway.pages = {}
-sway.pages_unordered = {}
+sway.pages_ordered = {}
 local contexts = {}
 sway.enabled = true
 local gui = flow.widgets
@@ -15,7 +15,7 @@ function sway.register_page(name, def)
 
 	sway.pages[name] = def
 	def.name = name
-	table.insert(sway.pages_unordered, def)
+	table.insert(sway.pages_ordered, def)
 end
 
 function sway.override_page(name, def)
@@ -146,7 +146,7 @@ function sway.get_form(player, context)
 	local nav = {}
 	local nav_ids = {}
 	local current_idx = 1
-	for _, pdef in pairs(sway.pages_unordered) do
+	for _, pdef in ipairs(sway.pages_ordered) do
 		if not pdef.is_in_nav or pdef:is_in_nav(player, context) then
 			nav[#nav + 1] = pdef.title
 			nav_ids[#nav_ids + 1] = pdef.name
