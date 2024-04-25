@@ -78,6 +78,7 @@ describe("pages", function ()
 		sway.pages_ordered = {}
 	end)
 	describe("register_page", function ()
+		pending"assert when is_in_nav is not null or a function"
 		it("is a function on sway", function ()
 			assert.equal("function", type(sway.register_page))
 		end)
@@ -1193,9 +1194,57 @@ describe("content functions", function ()
 					{ order = 5, ip = true, ix = true},
 				}, "called correctly")
 			end)
-			pending"adds the page info if is_in_nav is undefined or returns true"
+			it("adds the page info if is_in_nav is undefined or returns true", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				sway.pages_ordered = {}
+				sway.pages = {}
+				sway.register_page("fun -> true",{
+					get = function ()
+						return gui.Nil{}
+					end,
+					is_in_nav = function () return true end
+				})
+				sway.register_page("fun -> false",{
+					get = function ()
+						return gui.Nil{}
+					end,
+					is_in_nav = function () return false end
+				})
+				sway.register_page("nothing",{
+					get = function ()
+						return gui.Nil{}
+					end
+				})
+				sway.register_page("nothing else",{
+					get = function ()
+						return gui.Nil{}
+					end,
+					is_in_nav = nil
+				})
+				local p, x = {}, { page = "nothing else" }
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				assert.same(x, {
+					nav = {
+						"fun -> true",
+						"nothing",
+						"nothing else",
+					},
+					nav_titles = {},
+					nav_idx = 3,
+					page = "nothing else"
+				})
+			end)
 			pending"sets the current_idx to the correct page"
 		end)
+		-- TODO: this should also be tested for pages that _do_ exist, but are not in the nav
 		pending"returns result of get for sway.page['404'] when page not found, and 404 is truthy"
 		pending"when page is not found"
 	end)

@@ -147,7 +147,7 @@ function sway.get_form(player, context)
 	local nav_ids = {}
 	local current_idx = 1
 	for _, pdef in ipairs(sway.pages_ordered) do
-		if not pdef.is_in_nav or pdef:is_in_nav(player, context) then
+		if pdef.is_in_nav == nil or pdef:is_in_nav(player, context) then
 			nav[#nav + 1] = pdef.title
 			nav_ids[#nav_ids + 1] = pdef.name
 			if pdef.name == context.page then
