@@ -11,6 +11,10 @@ function sway.register_page(name, def)
 	assert(type(name) == "string", "[sway] register_page: requires name to be string")
 	assert(type(def) == "table", "[sway] register_page: requires definition table to be table")
 	assert(type(def.get) == "function", "[sway] register_page: requires get inside the definition table to be function")
+	assert(
+		def.is_in_nav == nil or type(def.is_in_nav) == "function",
+		"[sway] register_page: page '" .. name .. "' is_in_nav must be nil or a fn."
+	)
 	assert(not sway.pages[name], "[sway] register_page: page '" .. name .. "' must not already be registered")
 
 	sway.pages[name] = def
@@ -29,6 +33,10 @@ function sway.override_page(name, def)
 	if type(def.get) ~= "nil" then
 		assert(type(def.get) == "function", "[sway] override_page: When overriding get, it must be a function.")
 	end
+	assert(
+		def.is_in_nav == nil or type(def.is_in_nav) == "function",
+		"[sway] override_page: page '" .. name .. "' is_in_nav must be nil or a fn."
+	)
 	minetest.log("action", "[sway] override_page: '" .. name .. "' is becoming overriden")
 	for key, value in pairs(def) do
 		page[key] = value
