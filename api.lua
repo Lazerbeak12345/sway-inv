@@ -153,12 +153,13 @@ function sway.get_form(player, context)
 	-- Generate navigation tabs
 	local nav = {}
 	local nav_ids = {}
-	local current_idx = 1
+	local requested_page = context.page
+	local current_idx = -1 -- Defaults to this number to indicate an invalid page index.
 	for _, pdef in ipairs(sway.pages_ordered) do
 		if pdef.is_in_nav == nil or pdef:is_in_nav(player, context) then
 			nav[#nav + 1] = pdef.title
 			nav_ids[#nav_ids + 1] = pdef.name
-			if pdef.name == context.page then
+			if pdef.name == requested_page then
 				current_idx = #nav_ids
 			end
 		end
@@ -168,22 +169,35 @@ function sway.get_form(player, context)
 	context.nav_idx = current_idx
 
 	-- Generate formspec
-	local page = sway.pages[context.page] or sway.pages["404"]
+	local page = sway.pages[requested_page]
+	if not page then
+		page = sway.pages["404"]
+		context.page = "404"
+	elseif current_idx == -1 then
+		page = sway.pages["403"]
+		context.page = "403"
+	end
 	if page then
 		return page:get(player, context)
 	else
-		local old_page = context.page
 		local home_page = sway.get_homepage_name(player)
 
-		if old_page == home_page then
-			minetest.log("error", "[sway] Couldn't find " .. dump(old_page) ..
-					", which is also the old page")
-
+		if requested_page == home_page then
+			minetest.log(
+				"error",
+				"[sway] Couldn't find the requested page, '"
+				.. dump(requested_page)
+				.. "', which is also the home page."
+			)
 			return gui.Nil{}
 		end
 
-		minetest.log("warning", "[sway] Couldn't find " .. dump(old_page) ..
-				" so switching to homepage")
+		minetest.log(
+			"warning",
+			"[sway] Couldn't find '"
+			.. dump(requested_page)
+			.. "' so switching to homepage"
+		)
 		sway.set_page(player, home_page)
 		context = sway.get_or_create_context(player)
 		assert(sway.pages[context.page], "[sway] Invalid homepage")

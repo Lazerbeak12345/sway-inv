@@ -1175,8 +1175,13 @@ describe("content functions", function ()
 				local pagename = "asdfasdf"
 				sway.pages_ordered = {}
 				sway.pages = {}
-				local p, x = {}, { page = pagename..1 }
+				local p, x = {}, { page = "doesn't have one" }
 				local calls = {}
+				sway.register_page("doesn't have one",{
+					get = function ()
+						return gui.Nil{}
+					end,
+				})
 				for i = 1, 5 do
 					sway.register_page(pagename..i,{
 						get = function ()
@@ -1253,8 +1258,89 @@ describe("content functions", function ()
 				})
 			end)
 		end)
-		-- TODO: this should also be tested for pages that _do_ exist, but are not in the nav
-		pending"returns result of get for sway.page['404'] when page not found, and 404 is truthy"
+		describe("400 pages!", function ()
+			it("returns result of get for sway.page['403'] when page not found, and 403 is truthy", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local hiddenCalled = false
+				sway.register_page("hidden page",{
+					get = function ()
+						hiddenCalled = true
+						return gui.Nil{}
+					end,
+					is_in_nav = function () return false end
+				})
+				local fourOhThreeCalled = false
+				sway.register_page("403",{
+					get = function ()
+						fourOhThreeCalled = true
+						return gui.Nil{}
+					end,
+					-- Most 404 pages would be hidden as well.
+					is_in_nav = function () return false end
+				})
+				local p, x = {}, { page = "hidden page" }
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				assert.same({
+					nav = { },
+					nav_titles = {},
+					nav_idx = -1,
+					page = "403"
+				}, x)
+				assert.False(hiddenCalled, "hidden called")
+				assert.True(fourOhThreeCalled, "403 called")
+			end)
+			it("returns result of get for sway.page['404'] when page not found, and 404 is truthy", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local fourOhThreeCalled = false
+				sway.register_page("403",{
+					get = function ()
+						fourOhThreeCalled = true
+						return gui.Nil{}
+					end,
+					-- Most 404 pages would be hidden as well.
+					is_in_nav = function () return false end
+				})
+				local fourOhFourCalled = false
+				sway.register_page("404",{
+					get = function ()
+						fourOhFourCalled = true
+						return gui.Nil{}
+					end,
+					-- Most 404 pages would be hidden as well.
+					is_in_nav = function () return false end
+				})
+				local p, x = {}, { page = "wrong page" }
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				assert.same({
+					nav = { },
+					nav_titles = {},
+					nav_idx = -1,
+					page = "404"
+				}, x)
+				assert.False(fourOhThreeCalled, "403 called")
+				assert.True(fourOhFourCalled, "404 called")
+			end)
+		end)
 		pending"when page is not found"
 	end)
 end)
