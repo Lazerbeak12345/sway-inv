@@ -101,7 +101,7 @@ function sway.InventoryTiles(fields)
 		} or gui.Nil{}
 	}
 end
-local spacing = 0.25 -- TODO
+local spacing = 0.25 -- TODO:
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"
@@ -196,11 +196,10 @@ function sway.get_form(player, context)
 			"warning",
 			"[sway] Couldn't find '"
 			.. dump(requested_page)
-			.. "' so switching to homepage"
+			.. "' so switching to homepage."
 		)
+		assert(sway.pages[home_page], "[sway] Invalid homepage")
 		sway.set_page(player, home_page)
-		context = sway.get_or_create_context(player)
-		assert(sway.pages[context.page], "[sway] Invalid homepage")
 
 		return sway.get_form(player, context)
 	end

@@ -47,7 +47,21 @@ function minetest.get_modpath(modname)
 end
 dofile(FORMSPEC_AST_PATH .. '/init.lua')
 _G.minetest = minetest -- Must be defined after formspec_ast runs
-_G.dump = ident"{ a dumped value would go here }";
+_G.dump = function (item)
+	if type(item) == "table" then
+		local out = "{ "
+		for key, value in pairs(item) do
+			out = out .. dump(key) .. " = " .. dump(value) .. ", "
+		end
+		return out .. "}"
+	elseif type(item) == "string" then
+		return "\"" .. item .. "\""
+	elseif item == nil then
+		return "nil"
+	else
+		return item .. ""
+	end
+end
 dofile"../flow/init.lua"
 dofile"../flow-extras/init.lua"
 dofile"init.lua"
@@ -648,6 +662,43 @@ describe("default page", function ()
 			end
 			assert.True(has_at_least_one_crafting_preview, "has_at_least_one_crafting_preview")
 		end
+	end)
+	it("provides a get function that returns the result of sway.Form with the result of CraftingRow", function ()
+		local crafting = default_pages["sway:crafting"]
+		local get = crafting.get
+
+		local old_CR = crafting.CraftingRow
+		local old_Form = sway.Form
+
+		local CR_args = {}
+		crafting.CraftingRow = function (self, ...)
+			CR_args[#CR_args+1] = {self, ...}
+			return gui.VBox{ name = "crow", ... }
+		end
+		sway.Form = function (table)
+			table.name = "form"
+			return gui.VBox(table)
+		end
+
+		local render = get(crafting)
+
+		sway.Form = old_Form
+		crafting.CraftingRow = old_CR
+
+		local form = flow_extras.search{
+			tree = render,
+			key = "name",
+			value = "form",
+			check_root = true
+		}()
+
+		assert.truthy(form, "Contains Form")
+		assert.equal(crafting, CR_args[1][1], "it's passed self")
+		assert.truthy(flow_extras.search{
+			tree = form,
+			key = "name",
+			value = "crow",
+		}(), "contains crafting row")
 	end)
 end)
 -- tests for the API integration with Minetest, Flow and Flow-Extras (the tools this library is based upon)
@@ -1341,6 +1392,115 @@ describe("content functions", function ()
 				assert.True(fourOhFourCalled, "404 called")
 			end)
 		end)
-		pending"when page is not found"
+		describe("when page is not found and 400 error pages aren't present", function ()
+			it("returns gui.Nil and logs an error if the missing page is the homepage", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				local old_mtl = minetest.log
+				local mtl_calls = {}
+				minetest.log = function (...)
+					mtl_calls[#mtl_calls+1] = {...}
+				end
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local p, x = {}, { page = "sway:crafting" }
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				minetest.log = old_mtl
+				assert.same({
+					nav = { },
+					nav_titles = {},
+					nav_idx = -1,
+					page = "404"
+				}, x)
+				assert.same({{
+					"error",
+					"[sway] Couldn't find the requested page, '\"sway:crafting\"', which is also the home page."
+				}}, mtl_calls)
+			end)
+			it("logs an error, changes the page to the homepage and asserts that the homepage is possible to get", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				local old_mtl = minetest.log
+				local mtl_calls = {}
+				minetest.log = function (...)
+					mtl_calls[#mtl_calls+1] = {...}
+				end
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local p, x = {}, { page = "asdf" }
+				assert.has_error(function ()
+					sway.get_form(p,x)
+				end, "[sway] Invalid homepage")
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				minetest.log = old_mtl
+				assert.same({
+					nav = { },
+					nav_titles = {},
+					nav_idx = -1,
+					page = "404"
+				}, x)
+				assert.same({{
+					"warning",
+					"[sway] Couldn't find '\"asdf\"' so switching to homepage."
+				}}, mtl_calls)
+			end)
+			it("logs an error, changes the page to the homepage and re-calls get_form", function ()
+				local old_gpac = sway.get_player_and_context
+				sway.get_player_and_context = function (...)
+					return ...
+				end
+				local old_po = sway.pages_ordered
+				local old_p = sway.pages
+				local old_mtl = minetest.log
+				local mtl_calls = {}
+				minetest.log = function (...)
+					mtl_calls[#mtl_calls+1] = {...}
+				end
+				sway.pages_ordered = {}
+				sway.pages = {}
+				local p, x = {}, { page = "asdf" }
+				local old_sp = sway.set_page
+				local sp_calls = {}
+				sway.set_page = function (...)
+					sp_calls[#sp_calls+1] = {...}
+					x.page = "sway:crafting"
+				end
+				sway.register_page("sway:crafting", {
+					get = function ()
+						return gui.Nil{}
+					end
+				})
+				sway.get_form(p,x)
+				sway.get_player_and_context = old_gpac
+				sway.pages_ordered = old_po
+				sway.pages = old_p
+				sway.set_page = old_sp
+				minetest.log = old_mtl
+				assert.same({{
+					"warning",
+					"[sway] Couldn't find '\"asdf\"' so switching to homepage."
+				}}, mtl_calls)
+				assert.same({{p,"sway:crafting"}}, sp_calls)
+				assert.same({
+					nav = { "sway:crafting" },
+					nav_titles = {},
+					nav_idx = 1,
+					page = "sway:crafting"
+				}, x)
+			end)
+		end)
 	end)
 end)
