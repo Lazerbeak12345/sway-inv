@@ -15,10 +15,16 @@ sway.register_page("sway:crafting", {
 				inventory_location = "current_player",
 				list_name = "craft",
 				w = 3, h = 3,
-				listring = { { inventory_location = "current_player", list_name = "main" } }
+				listring = { { inventory_location = "current_player", list_name = "main" } },
+				spacing = sway.list_spacing
 			},
 			gui.Image{ w = 1, h = 1, texture_name = "sway_crafting_arrow.png" },
-			flow_extras.List{ inventory_location = "current_player", list_name = "craftpreview", w = 1, h = 1 }
+			flow_extras.List{
+				inventory_location = "current_player",
+				list_name = "craftpreview",
+				w = 1, h = 1,
+				spacing = sway.list_spacing
+			}
 		}
 	end,
 	get = function(self, ...)

@@ -74,6 +74,7 @@ function sway.NavGui(fields)
 	end
 end
 
+sway.list_spacing = 0.25
 function sway.InventoryTiles(fields)
 	if fields == nil then
 		fields = {}
@@ -89,7 +90,8 @@ function sway.InventoryTiles(fields)
 			list_name = "main",
 			w = w,
 			h = 1,
-			bgimg = "sway_hb_bg.png"
+			bgimg = "sway_hb_bg.png",
+			spacing = spacing
 		},
 		h > 1 and flow_extras.List{
 			align_h = "center",
@@ -97,11 +99,11 @@ function sway.InventoryTiles(fields)
 			list_name = "main",
 			w = w,
 			h = h - 1,
-			starting_item_index = w
+			starting_item_index = w,
+			spacing = spacing
 		} or gui.Nil{}
 	}
 end
-local spacing = 0.25 -- TODO:
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"

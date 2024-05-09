@@ -1,6 +1,6 @@
 # Sway
 
-Sway is an experimental beyond-next-gen inventory for minetest.
+Sway is an inventory for minetest that makes use of [Flow] forms.
 
 [![ContentDB](https://content.minetest.net/packages/lazerbeak12345/sway/shields/downloads/)](https://content.minetest.net/packages/lazerbeak12345/sway/)
 [![Minetest Forums](https://img.shields.io/badge/Minetest_Forums-Sway-%234faf00?logo=minetest&labelColor=%23161616)](https://forum.minetest.net/viewtopic.php?t=29774)
@@ -27,7 +27,7 @@ Much like [SFINV], this mod is a "A cleaner, simpler solution to having an advan
 
 Sway uses [Flow] formspecs for rendering. With Sway, formspec size is no longer a limit to your UI or UX. You can have fully dynamic layouts too!
 
-> Lots of changes are underway! The API is not stable yet.
+> A few changes are underway! The API is not stable yet, but it's getting close!
 
 ## Features
 
@@ -260,35 +260,35 @@ Members of the `sway` global
 ### Use `sway.Form` to apply a basic layout
 
 ```lua
-    local gui = flow.widgets
-	return sway.Form{
-      show_inv = true,
-      gui.HBox{
-			align_h = "center",
-			gui.List{
-				inventory_location = "current_player",
-				list_name = "craft",
-				w = 3, h = 3
-			},
-			gui.Image{
-				w = 1, h = 1,
-				texture_name = "sway_crafting_arrow.png"
-			},
-			gui.List{
-				inventory_location = "current_player",
-				list_name = "craftpreview",
-				w = 1, h = 1
-			},
-			gui.Listring{
-				inventory_location = "current_player",
-				list_name = "main"
-			},
-			gui.Listring{
-				inventory_location = "current_player",
-				list_name = "craft"
-			}
-      }
+local gui = flow.widgets
+return sway.Form{
+    show_inv = true,
+    gui.HBox{
+        align_h = "center",
+        gui.List{
+            inventory_location = "current_player",
+            list_name = "craft",
+            w = 3, h = 3
+        },
+        gui.Image{
+            w = 1, h = 1,
+            texture_name = "sway_crafting_arrow.png"
+        },
+        gui.List{
+            inventory_location = "current_player",
+            list_name = "craftpreview",
+            w = 1, h = 1
+        },
+        gui.Listring{
+            inventory_location = "current_player",
+            list_name = "main"
+        },
+        gui.Listring{
+            inventory_location = "current_player",
+            list_name = "craft"
+        }
     }
+}
 ```
 
 ### Customising themes
@@ -296,27 +296,27 @@ Members of the `sway` global
 Simply override this function to change the navigation:
 
 ```lua
-    local gui = flow.widgets
-	function sway.NavGui(fields)
-        local nav_titles, current_idx = fields.nav_titles, fields.current_idx
-		return gui.Label{ label = "nav gui" }
-	end
+local gui = flow.widgets
+function sway.NavGui(fields)
+    local nav_titles, current_idx = fields.nav_titles, fields.current_idx
+    return gui.Label{ label = "nav gui" }
+end
 ```
 
 And override this function to change the layout (not the actual code, see api.lua for that):
 
 ```lua
-	function sway.Form(fields)
-      local show_inv, size = fields.show_inv, fields.size
-      local context = sway.get_or_create_context()
-      return gui.VBox{
-          sway.NavGui{
-              nav_titles = context.nav_titles,
-              current_idx = context.nav_idx
-          },
-          gui.VBox(fields)
-      }
-	end
+function sway.Form(fields)
+    local show_inv, size = fields.show_inv, fields.size
+    local context = sway.get_or_create_context()
+    return gui.VBox{
+        sway.NavGui{
+            nav_titles = context.nav_titles,
+            current_idx = context.nav_idx
+        },
+        gui.VBox(fields)
+    }
+end
 ```
 
 ## FAQ
