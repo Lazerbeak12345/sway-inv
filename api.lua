@@ -91,7 +91,7 @@ function sway.InventoryTiles(fields)
 			w = w,
 			h = 1,
 			bgimg = "sway_hb_bg.png",
-			spacing = spacing
+			spacing = sway.list_spacing
 		},
 		h > 1 and flow_extras.List{
 			align_h = "center",
@@ -100,14 +100,14 @@ function sway.InventoryTiles(fields)
 			w = w,
 			h = h - 1,
 			starting_item_index = w,
-			spacing = spacing
+			spacing = sway.list_spacing
 		} or gui.Nil{}
 	}
 end
 function sway.insert_prepend(widget)
 	widget.no_prepend = true -- Hide the default background.
 	widget.bgcolor = "#0000"
-	table.insert(widget, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = spacing } })
+	table.insert(widget, 1, gui.StyleType{ selectors = { "list" }, props = { spacing = sway.list_spacing } })
 end
 function sway.Form(fields)
 	assert(type(fields) == "table", "[sway] Form: requires field table.")

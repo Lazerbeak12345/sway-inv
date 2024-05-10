@@ -56,6 +56,10 @@ _G.dump = function (item)
 		return out .. "}"
 	elseif type(item) == "string" then
 		return "\"" .. item .. "\""
+	elseif type(item) == "boolean" then
+		return item and "true" or "false"
+	elseif type(item) == "function" then
+		return "function () [...] end"
 	elseif item == nil then
 		return "nil"
 	else
@@ -1124,6 +1128,7 @@ describe("content functions", function ()
 				list_name = "main",
 				w = 1, h = 1,
 				bgimg = "sway_hb_bg.png",
+				spacing = 0.25,
 			}}}, feL_calls, "calls")
 			assert.same(gui.VBox{
 				align_v = "end",
@@ -1147,14 +1152,16 @@ describe("content functions", function ()
 					inventory_location = "current_player",
 					list_name = "main",
 					w = 8, h = 1,
-					bgimg = "sway_hb_bg.png"
+					bgimg = "sway_hb_bg.png",
+					spacing = 0.25,
 				}},
 				{{
 					align_h = "center",
 					inventory_location = "current_player",
 					list_name = "main",
 					w = 8, h = 3,
-					starting_item_index = 8
+					starting_item_index = 8,
+					spacing = 0.25,
 				}}
 			}, feL_calls, "calls")
 			assert.same(gui.VBox{
