@@ -1,5 +1,6 @@
 -- TODO: rewrite this file so a dependent mod developer can import this library as integration code. Once that's done
 -- add it to the FAQ in the README
+local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
 local function nilfn(...) local _={...} end -- By saving the args here, we get rid of a TON of false positive warnings
 local function ident(v)
 	return function ()
@@ -25,6 +26,7 @@ local minetest = {
 	end,
 	get_player_information = ident{}
 }
+stub(minetest, "log")
 local function stupid_dump(...)
 	for _, item in ipairs{ ... } do
 		print"{"
@@ -71,13 +73,6 @@ dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local default_pages = sway.pages
 --local default_pages_ordered = sway.pages_ordered
-local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
-local function fancy_stub(obj, name, callback)
-	local old = obj[name]
-	stub(obj, name)
-	callback(old)
-	obj[name] = old
-end
 assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
 local sway, flow_extras, formspec_ast, flow = sway, flow_extras, formspec_ast, flow
 local gui = flow.widgets
@@ -185,14 +180,13 @@ describe("pages", function ()
 		end)
 		it("logs that a page is getting overriden", function ()
 			sway.register_page(testpagename, { get = function () end })
-			fancy_stub(minetest, "log", function ()
-				sway.override_page(testpagename, {})
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] override_page: '" .. testpagename .. "' is becoming overriden"
-				)
-				assert.stub(minetest.log).was.called(1)
-			end)
+			sway.override_page(testpagename, {})
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] override_page: '" .. testpagename .. "' is becoming overriden"
+			)
+			assert.stub(minetest.log).was.called(1)
+			minetest.log:clear()
 		end)
 		it("copies all keys from the new def onto the old table", function ()
 			local def = { a = 1, b = 2, get = function () end }
@@ -209,17 +203,16 @@ describe("pages", function ()
 			local def = { get = function () end }
 			local override = { name = "sway:test2" }
 			sway.register_page(testpagename, def)
-			fancy_stub(minetest, "log", function ()
-				sway.override_page(testpagename, override)
-				assert.same({
-					["sway:test2"] = def,
-				}, sway.pages)
-				assert.same({ def }, sway.pages_ordered)
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
-				)
-			end)
+			sway.override_page(testpagename, override)
+			assert.same({
+				["sway:test2"] = def,
+			}, sway.pages)
+			assert.same({ def }, sway.pages_ordered)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
+			)
+			minetest.log:clear()
 		end)
 		it("requires overrides to name to be a string", function ()
 			sway.register_page(testpagename, { get = function () end})
@@ -275,6 +268,7 @@ describe("pages", function ()
 			assert.same("sway:crafting", sway.get_homepage_name{}) -- This table is a mock of the player api
 		end)
 		it("can be overriden", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old = sway.get_homepage_name
 			function sway.get_homepage_name(_)
 				return testpagename
@@ -296,6 +290,7 @@ describe("pages", function ()
 			end, "[sway] set_page: expected a string for the page name. Got a 'table'")
 		end)
 		it("gets the current page, sets to the new page and asserts if the newpage is invalid", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_pages = sway.pages
 			local old_get_or_create_context = sway.get_or_create_context
 			local ctx = {}
@@ -311,6 +306,7 @@ describe("pages", function ()
 			sway.pages = old_pages
 		end)
 		it("if the newpage is valid, calls set_player_inventory_formspec", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_get_or_create_context = sway.get_or_create_context
 			local old_pages = sway.pages
 			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
@@ -332,6 +328,7 @@ describe("pages", function ()
 			assert.same({page = "real:page"}, ctx, "context")
 		end)
 		it("if there's an on_leave function it calls it", function ()
+			-- TODO: use spys mocks and stubs properly
 			-- TODO  should I use test composition for these tests? They're nearly exactly the same.
 			local old_get_or_create_context = sway.get_or_create_context
 			local old_pages = sway.pages
@@ -363,6 +360,7 @@ describe("pages", function ()
 			assert.same({{old_page, player, ctx}}, ol_calls, "ol_calls")
 		end)
 		it("on_leave is not called if the page is not found", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_pages = sway.pages
 			local old_get_or_create_context = sway.get_or_create_context
 			local ctx = {page = "old:page"}
@@ -384,6 +382,7 @@ describe("pages", function ()
 			sway.pages = old_pages
 		end)
 		it("if there's an on_enter function it calls it", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_get_or_create_context = sway.get_or_create_context
 			local old_pages = sway.pages
 			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
@@ -416,6 +415,7 @@ describe("pages", function ()
 			assert.same("function", type(sway.get_page))
 		end)
 		it("makes a call to get the context then returns it if falsy", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_get_or_create_context = sway.get_or_create_context
 			local gocc_called_with = {}
 			local ctx = { page = "page:name" }
@@ -452,24 +452,24 @@ describe("context", function ()
 			end, "[sway] set_context: Requires a playerref")
 		end)
 		it("deletes the current context if it wasn't be provided", function ()
-			fancy_stub(minetest, "log", function ()
-				sway.set_context(mock_playerref)
-				-- assert that it was logged to be deleted
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] set_context: deleting context for 'lazerbeak12345'"
-				)
-				assert.stub(minetest.log).was.called(1)
-				sway.get_or_create_context(mock_playerref)
-				-- assert that getting the context causes a new log item that it was created
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-				)
-				assert.stub(minetest.log).was.called(2)
-				-- delete it again to keep state clean. We know this works because we just asserted that it does.
-				sway.set_context(mock_playerref)
-			end)
+			minetest.log:clear() -- TODO: this is only needed because of a buggy test elsewhere
+			sway.set_context(mock_playerref)
+			-- assert that it was logged to be deleted
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] set_context: deleting context for 'lazerbeak12345'"
+			)
+			assert.stub(minetest.log).was.called(1)
+			sway.get_or_create_context(mock_playerref)
+			-- assert that getting the context causes a new log item that it was created
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			assert.stub(minetest.log).was.called(2)
+			-- delete it again to keep state clean. We know this works because we just asserted that it does.
+			sway.set_context(mock_playerref)
+			minetest.log:clear()
 		end)
 		it("ensures that the needed properties are present", function ()
 			local ctx = {}
@@ -498,36 +498,35 @@ describe("context", function ()
 				sway.get_or_create_context()
 			end, "[sway] get_or_create_context: Requires a playerref when run outside of a form.")
 		end)
+		-- TODO: this should be multiple, smaller tests
 		it("if context can't be found create a new one", function ()
 			-- Clean the state
+			minetest.log:clear() -- TODO: this is only needed because of a buggy test elsewhere
 			sway.set_context(mock_playerref)
-			fancy_stub(minetest, "log", function ()
-				local ctx = sway.get_or_create_context(mock_playerref)
-				assert.truthy(ctx, "It exsists at first.")
-				assert.stub(minetest.log).was.called(1)
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-				)
-				-- Clean the state again
-				sway.set_context(mock_playerref)
-				assert.stub(minetest.log).was.called(2)
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] set_context: deleting context for 'lazerbeak12345'"
-				)
-				local old_ctx = ctx
-				ctx = sway.get_or_create_context(mock_playerref)
-				assert.stub(minetest.log).was.called(3)
-				assert.stub(minetest.log).was.called_with(
-					"action",
-					"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
-				)
-				assert.truthy(ctx, "It still exsists")
-				assert.are_not.equal(ctx, old_ctx)
-				-- Clean the state at the end
-				sway.set_context(mock_playerref)
-			end)
+			local ctx = sway.get_or_create_context(mock_playerref)
+			assert.truthy(ctx, "It exsists at first.")
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			-- Clean the state again
+			minetest.log:clear() -- TODO: this is only needed because of a buggy test elsewhere
+			sway.set_context(mock_playerref)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] set_context: deleting context for 'lazerbeak12345'"
+			)
+			local old_ctx = ctx
+			ctx = sway.get_or_create_context(mock_playerref)
+			assert.stub(minetest.log).was.called_with(
+				"action",
+				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
+			)
+			assert.truthy(ctx, "It still exsists")
+			assert.are_not.equal(ctx, old_ctx)
+			-- Clean the state at the end
+			sway.set_context(mock_playerref)
+			minetest.log:clear()
 		end)
 		it("return the context if it can be found", function ()
 			local ctx = {}
@@ -547,6 +546,7 @@ describe("context", function ()
 			assert.equals(context, r_context, "context is equal")
 		end)
 		it("if only the player is provided, call get_or_create_context with the player", function ()
+			-- TODO: use spys mocks and stubs properly
 			--TODO spy broke .... the workaround is fine
 			--spy(sway,"get_or_create_context")
 			local old_get_or_create_context = sway.get_or_create_context
@@ -575,6 +575,7 @@ describe("context", function ()
 			minetest.get_player_by_name = old_get_player_by_name
 		end)
 		it("if only the context is provided, return the player referenced by the context", function ()
+			-- TODO: use spys mocks and stubs properly
 			local i_player, context = {}, {
 				player_name = "lazerbeak12345"
 			}
@@ -591,6 +592,7 @@ describe("context", function ()
 			minetest.get_player_by_name = old_get_player_by_name
 		end)
 		it("if neither args are provided, call get_or_create_context with nothing", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_get_or_create_context = sway.get_or_create_context
 			local gocc_called_with ={}
 			sway.get_or_create_context = function (...)
@@ -668,6 +670,7 @@ describe("default page", function ()
 		end
 	end)
 	it("provides a get function that returns the result of sway.Form with the result of CraftingRow", function ()
+		-- TODO: use spys mocks and stubs properly
 		local crafting = default_pages["sway:crafting"]
 		local get = crafting.get
 
@@ -715,6 +718,7 @@ describe("Lower-Layer Integration", function ()
 		it("defaults to true", function ()
 			assert.True(sway.enabled)
 		end)
+		pending"if it is set to false, sway does nothing"
 	end)
 	local onleaveplayer_cb = function (...)
 		for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
@@ -729,6 +733,7 @@ describe("Lower-Layer Integration", function ()
 	local fakeplayer = {get_player_name=ident"fakeplayer"}
 	describe("on_leaveplayer", function ()
 		it("calls set_context", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			local sc_calls = {}
 			sway.set_context = function (...)
@@ -741,6 +746,7 @@ describe("Lower-Layer Integration", function ()
 	end)
 	describe("on_joinplayer", function ()
 		it("if sway is disabled, the callback does nothing", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_enabled = sway.enabled
 			sway.enabled = false
 			local old_spif = sway.set_player_inventory_formspec
@@ -754,6 +760,7 @@ describe("Lower-Layer Integration", function ()
 			assert.same({}, spif_calls)
 		end)
 		it("if sway is enabled, it calls sway.set_player_inventory_formspec", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_enabled = sway.enabled
 			sway.enabled = true
 			local old_spif = sway.set_player_inventory_formspec
@@ -775,6 +782,7 @@ describe("Lower-Layer Integration", function ()
 			end) -- Doesn't matter which error message. gpac has a good enough one.
 		end)
 		it("calls get_player_and_context to ensure both are gotten if possible", function ()
+			-- TODO: use spys mocks and stubs properly
 			local p, x = {}, {}
 			local p1, x1 = {}, {} -- Doing this ensures that it's the return of gpac that is gotten later
 			local old_gpac = sway.get_player_and_context
@@ -808,6 +816,7 @@ describe("Lower-Layer Integration", function ()
 			return formspec_ast.parse(sway.form:render_to_formspec_string(p, x, false))
 		end
 		it("calls set_context to ensure the context is set per player", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			local sc_calls = {}
 			sway.set_context = function (...)
@@ -824,6 +833,7 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(sc_calls[1][2], c, "ctx")
 		end)
 		it("calls flow_extras.set_wrapped_context to wrap the context", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
 			local old_swc = flow_extras.set_wrapped_context
@@ -843,6 +853,7 @@ describe("Lower-Layer Integration", function ()
 			assert.same(swc_calls[1][2], "function", "swc function")
 		end)
 		it("calls sway.get_form from inside the wrapped context", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			sway.set_context = nilfn
 			local my_ex = sway.get_form
@@ -865,6 +876,7 @@ describe("Lower-Layer Integration", function ()
 			assert.equal(gf_s_ctx, c, "can get context from inside form")
 		end)
 		it("returns the form", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
 			local my_ex = sway.get_form
@@ -888,6 +900,7 @@ describe("Lower-Layer Integration", function ()
 			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
 		end)
 		it("calls insert_prepend if no_prepend is not set in the form", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_sc = sway.set_context
 			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
 			local ip = sway.insert_prepend
@@ -1021,6 +1034,7 @@ describe("content functions", function ()
 			assert.truthy(match.on_event, "event")
 		end)
 		it("tabheader event calls set_page", function ()
+			-- TODO: use spys mocks and stubs properly
 			local args = { nav_titles = { "title", "next page" }, current_idx = 1 }
 			local match = flow_extras.search{
 				tree = sway.NavGui(args),
@@ -1050,6 +1064,7 @@ describe("content functions", function ()
 			end, "[sway] Form: requires field table.")
 		end)
 		it("contains NavGui and the field children but not inv", function ()
+			-- TODO: use spys mocks and stubs properly
 			local NG = sway.NavGui
 			local NG_calls = {}
 			sway.NavGui = function (...)
@@ -1081,6 +1096,7 @@ describe("content functions", function ()
 			}}}, NG_calls, "NG")
 		end)
 		it("show_inv field option includes the inv and the option is not exported", function ()
+			-- TODO: use spys mocks and stubs properly
 			local NG = sway.NavGui
 			local NG_calls = {}
 			sway.NavGui = function (...)
@@ -1114,6 +1130,7 @@ describe("content functions", function ()
 	end)
 	describe("InventoryTiles", function ()
 		it("with w and h of 1, contains certian elements", function ()
+			-- TODO: use spys mocks and stubs properly
 			local feL = flow_extras.List
 			local feL_calls = {}
 			flow_extras.List = function (...)
@@ -1138,6 +1155,7 @@ describe("content functions", function ()
 			}, ret, "ret")
 		end)
 		it("default w and h", function ()
+			-- TODO: use spys mocks and stubs properly
 			local feL = flow_extras.List
 			local feL_calls = {}
 			flow_extras.List = function (...)
@@ -1180,6 +1198,7 @@ describe("content functions", function ()
 	end)
 	describe("get_form", function ()
 		it("calls get_player_and_context", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_gpac = sway.get_player_and_context
 			local gpac_calls = {}
 			sway.get_player_and_context = function (...)
@@ -1196,6 +1215,7 @@ describe("content functions", function ()
 			assert.equal(x, gpac_calls[1][2], "ctx arg")
 		end)
 		it("returns result of get for found page", function ()
+			-- TODO: use spys mocks and stubs properly
 			local old_gpac = sway.get_player_and_context
 			sway.get_player_and_context = function (...)
 				return ...
@@ -1224,6 +1244,7 @@ describe("content functions", function ()
 		end)
 		describe("navigation loop", function ()
 			it("calls is_in_nav for all pages where it is defined, in order, in sway.pages_ordered", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
@@ -1318,6 +1339,7 @@ describe("content functions", function ()
 		end)
 		describe("400 pages!", function ()
 			it("returns result of get for sway.page['403'] when page not found, and 403 is truthy", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
@@ -1358,6 +1380,7 @@ describe("content functions", function ()
 				assert.True(fourOhThreeCalled, "403 called")
 			end)
 			it("returns result of get for sway.page['404'] when page not found, and 404 is truthy", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
@@ -1401,6 +1424,7 @@ describe("content functions", function ()
 		end)
 		describe("when page is not found and 400 error pages aren't present", function ()
 			it("returns gui.Nil and logs an error if the missing page is the homepage", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
@@ -1432,6 +1456,7 @@ describe("content functions", function ()
 				}}, mtl_calls)
 			end)
 			it("logs an error, changes the page to the homepage and asserts that the homepage is possible to get", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
@@ -1465,6 +1490,7 @@ describe("content functions", function ()
 				}}, mtl_calls)
 			end)
 			it("logs an error, changes the page to the homepage and re-calls get_form", function ()
+				-- TODO: use spys mocks and stubs properly
 				local old_gpac = sway.get_player_and_context
 				sway.get_player_and_context = function (...)
 					return ...
