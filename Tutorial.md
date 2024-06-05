@@ -65,7 +65,7 @@ sway.register_page("myadmin:myadmin", {
             show_inv = false,
             -- sway.Form puts all of its children into a gui.VBox.
             -- This is the first child
-            gui.Textlist{ w = 7.8, h = 3, name = "playerlist", listelms = players },
+            gui.Textlist{ w = 7.8, h = 3, name = "playerlist", listelems = players },
             -- And this HBox is the second row.
             -- This way we'll have a horizontal row of buttons
             gui.HBox{
