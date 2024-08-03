@@ -34,7 +34,6 @@ sway.register_page("mymod:hello", {
     get = function(self, player, context)
         return sway.Form{
             player = player,
-            context = context,
 			show_inv = true,
             gui.Label{ label = "Hello world!" }
         }
@@ -61,7 +60,6 @@ sway.register_page("myadmin:myadmin", {
         end
         return sway.Form{
             player = player,
-            context = context,
             show_inv = false,
             -- sway.Form puts all of its children into a gui.VBox.
             -- This is the first child
@@ -106,23 +104,27 @@ gui.HBox{
     gui.Button{
         label = "Kick"
         on_event = function(player, context)
-            local player_name = context.myadmin_players[context.form.playerlist]
+            local kicked_player_name = context.myadmin_players[context.form.playerlist]
             if player_name then
-                minetest.chat_send_player(player:get_player_name(),
-                        "Kicked " .. player_name)
-                minetest.kick_player(player_name)
+                minetest.chat_send_player(
+                    player:get_player_name(),
+                    "Kicked " .. kicked_player_name
+                )
+                minetest.kick_player(kicked_player_name)
             end
         end
     },
     gui.Button{
         label = "Kick + Ban"
         on_event = function(player, context)
-            local player_name = context.myadmin_players[context.form.playerlist]
+            local banned_player_name = context.myadmin_players[context.form.playerlist]
             if player_name then
-                minetest.chat_send_player(player:get_player_name(),
-                        "Banned " .. player_name)
-                minetest.ban_player(player_name)
-                minetest.kick_player(player_name, "Banned")
+                minetest.chat_send_player(
+                    player:get_player_name(),
+                    "Banned " .. banned_player_name
+                )
+                minetest.ban_player(banned_player_name)
+                minetest.kick_player(banned_player_name, "Banned")
             end
         end
     }
@@ -158,6 +160,10 @@ need to do that whenever kick or ban is granted or revoked to a player:
 
 ```lua
 local function on_grant_revoke(grantee, granter, priv)
+    if not sway.enabled then
+        return
+    end
+
     if priv ~= "kick" and priv ~= "ban" then
         return
     end
@@ -167,12 +173,11 @@ local function on_grant_revoke(grantee, granter, priv)
         return
     end
 
-    local context = sway.get_or_create_context(player)
-    if context.page ~= "myadmin:myadmin" then
+    if sway.get_page(player) ~= "myadmin:myadmin" then
         return
     end
 
-    sway.set_player_inventory_formspec(player, context)
+    sway.set_player_inventory_formspec(player)
 end
 
 minetest.register_on_priv_grant(on_grant_revoke)
