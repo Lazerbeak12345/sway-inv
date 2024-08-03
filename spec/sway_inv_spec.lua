@@ -24,8 +24,27 @@ local minetest = {
 	register_on_joinplayer = function (...)
 		minetest._register_on_joinplayer_calls[#minetest._register_on_joinplayer_calls+1] = {...}
 	end,
-	get_player_information = ident{}
+	get_player_information = ident{},
+	_register_on_mods_loaded_calls = {},
+	register_on_mods_loaded = function (...)
+		minetest._register_on_mods_loaded_calls[#minetest._register_on_mods_loaded_calls+1] = {...}
+	end
 }
+local onleaveplayer_cb = function (...)
+	for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
+		args[1](...)
+	end
+end
+local onjoinplayer_cb = function (...)
+	for _, args in ipairs(minetest._register_on_joinplayer_calls) do
+		args[1](...)
+	end
+end
+local onmodloaded_cb = function (...)
+	for _, args in ipairs(minetest._register_on_mods_loaded_calls) do
+		args[1](...)
+	end
+end
 stub(minetest, "log")
 local function stupid_dump(...)
 	for _, item in ipairs{ ... } do
@@ -720,16 +739,6 @@ describe("Lower-Layer Integration", function ()
 		end)
 		pending"if it is set to false, sway does nothing"
 	end)
-	local onleaveplayer_cb = function (...)
-		for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
-			args[1](...)
-		end
-	end
-	local onjoinplayer_cb = function (...)
-		for _, args in ipairs(minetest._register_on_joinplayer_calls) do
-			args[1](...)
-		end
-	end
 	local fakeplayer = {get_player_name=ident"fakeplayer"}
 	describe("on_leaveplayer", function ()
 		it("calls set_context", function ()
@@ -940,7 +949,7 @@ describe("Lower-Layer Integration", function ()
 		-- leaving it featureless and permanantly obsolete
 		it("slays the simple one", function ()
 			_G.sfinv = {}
-			sway.__conqueror();
+			onmodloaded_cb()
 			assert.equal(type(_G.sfinv.set_player_inventory_formspec), "function")
 			assert.same(
 				_G.sfinv.enabled,
@@ -957,16 +966,20 @@ describe("Lower-Layer Integration", function ()
 		-- known to be brittle
 		it("causes the slow and ugly one to stumble", function ()
 			_G.unified_inventory = {}
-			sway.__conqueror();
+			onmodloaded_cb()
 			assert.equal(type(_G.unified_inventory.set_inventory_formspec), "function")
 		end)
-		-- And last, it disables the very mod that was so poorly (over)engineered, it inspired sway, a post-ironic parody of
-		-- all Minetest inventory mods, mostly just ones that try to recreate the average post-millenium RPG inventory
-		-- "experience." If I wanted to play Xenoblade Cronicles X, I would have purchased a Nintendo account by now.
-		it("encumberes the vain one", function ()
+		-- And last, it complains about the very mod that was so poorly (over)engineered, it inspired sway, a post-ironic
+		-- parody of all Minetest inventory mods, mostly just ones that try to recreate the average post-millenium RPG
+		-- inventory "experience." If I wanted to play Xenoblade Cronicles X, I would have purchased a Nintendo account by
+		-- now.
+		--
+		-- On another note, it's rather fitting that it's impossible to disable the mod anyway.
+		it("complains about the vain one", function ()
 			_G.i3 = {}
-			sway.__conqueror();
-			assert.equal(type(_G.i3.set_fs), "function")
+			assert.has_error(function ()
+				onmodloaded_cb()
+			end)
 		end)
 		-- Perhaps it should be mentioned. There's several I haven't disabled. This is for two reasons.
 		--
