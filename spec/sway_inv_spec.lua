@@ -1,51 +1,78 @@
 -- TODO: rewrite this file so a dependent mod developer can import this library as integration code. Once that's done
 -- add it to the FAQ in the README
-local describe, it, assert, pending, stub, before_each = describe, it, assert, pending, stub, before_each
+-- NOTE: I don't NEED to do it this way, but it minimises warnings
+local busted = require"busted"
+
+local before_each = busted.before_each
+local describe = busted.describe
+local it = busted.it
+local pending = busted.pending
+
+local assert = busted.assert
+
+---@class spycalls
+---@field vals table<number, unknown>
+
+---@generic T:function
+---@class spy<T>
+---@field new fun(spied:`T`):spy<`T`>
+---@field on fun(table:table<string, `T`|any>, name:string):spy<`T`>
+---@field clear fun()
+---@field revert fun()
+---@field calls table<number, spycalls>
+local spy = busted.spy
+---@generic T:function
+---@class stub<T>:spy<T>
+---@overload fun(table:table<string, `T`|any>, name:string|nil):stub<`T`>
+local stub = busted.stub
+
+local match = busted.match
+
+-- TODO: contribute this to busted if I end up liking it?
+--
+---@class Agent:spy
+--- An agent is like a spy, but is replaced with a function that does something specific.
+local Agent = {}
+---Construct an agent
+function Agent:new(tb, key, replacement)
+	local o = {
+		_old = tb[key],
+		_replacement = spy.new(replacement),
+		_revert = function (old)
+			tb[key] = old
+		end,
+	}
+	setmetatable(o, self)
+	return o
+end
+function Agent:__index(key)
+	return Agent[key] or rawget(self, "_replacement")[key]
+end
+function Agent:__call(...)
+	return rawget(self, "_replacement")(...)
+end
+function Agent:revert()
+	rawget(self, "_revert")(rawget(self, "_old"))
+	return rawget(self, "_replacement"):revert()
+end
+local function agent(tb, key, replacement)
+	local a = Agent:new(tb, key, replacement)
+	tb[key] = a
+	return a
+end
+local function set_agent(state, arguments)
+	state.payload = arguments[1]
+	state.failure_message = arguments[2]
+end
+assert:register("modifier", "agent", set_agent)
+
 local function nilfn(...) local _={...} end -- By saving the args here, we get rid of a TON of false positive warnings
 local function ident(v)
-	return function ()
+	return function (...)
+		local _ = {...}
 		return v
 	end
 end
-local minetest = {
-	register_on_player_receive_fields = nilfn,
-	register_chatcommand = nilfn,
-	get_translator = ident(ident),
-	is_singleplayer = ident(true),
-	global_exists = function (name)
-		return _G[name] ~= nil
-	end,
-	log = nilfn,
-	_register_on_leaveplayer_calls = {},
-	register_on_leaveplayer = function (...)
-		minetest._register_on_leaveplayer_calls[#minetest._register_on_leaveplayer_calls+1] = {...}
-	end,
-	_register_on_joinplayer_calls = {},
-	register_on_joinplayer = function (...)
-		minetest._register_on_joinplayer_calls[#minetest._register_on_joinplayer_calls+1] = {...}
-	end,
-	get_player_information = ident{},
-	_register_on_mods_loaded_calls = {},
-	register_on_mods_loaded = function (...)
-		minetest._register_on_mods_loaded_calls[#minetest._register_on_mods_loaded_calls+1] = {...}
-	end
-}
-local onleaveplayer_cb = function (...)
-	for _, args in ipairs(minetest._register_on_leaveplayer_calls) do
-		args[1](...)
-	end
-end
-local onjoinplayer_cb = function (...)
-	for _, args in ipairs(minetest._register_on_joinplayer_calls) do
-		args[1](...)
-	end
-end
-local onmodloaded_cb = function (...)
-	for _, args in ipairs(minetest._register_on_mods_loaded_calls) do
-		args[1](...)
-	end
-end
-stub(minetest, "log")
 local function stupid_dump(...)
 	for _, item in ipairs{ ... } do
 		print"{"
@@ -57,17 +84,6 @@ local function stupid_dump(...)
 	return ...
 end
 assert(stupid_dump) -- Hack to make it so I don't have to ignore that this function is usually unused.
-local FORMSPEC_AST_PATH = '../formspec_ast'
-_G.FORMSPEC_AST_PATH = FORMSPEC_AST_PATH
-function minetest.get_modpath(modname)
-	if modname == "flow" then return "../flow" end
-	if modname == "formspec_ast" then return FORMSPEC_AST_PATH end
-	if modname == "flow_extras" then return "../flow-extras" end
-	assert(modname == "sway", "modname must be sway. was " .. modname)
-	return "."
-end
-dofile(FORMSPEC_AST_PATH .. '/init.lua')
-_G.minetest = minetest -- Must be defined after formspec_ast runs
 _G.dump = function (item)
 	if type(item) == "table" then
 		local out = "{ "
@@ -87,14 +103,65 @@ _G.dump = function (item)
 		return item .. ""
 	end
 end
+
+local minetest = {
+	register_on_player_receive_fields = nilfn,
+	register_chatcommand = nilfn,
+	get_translator = ident(ident),
+	is_singleplayer = ident(true),
+	global_exists = function (name)
+		return _G[name] ~= nil
+	end,
+	---@type spy
+	register_on_leaveplayer = spy.new(nilfn),
+	---@type spy
+	register_on_joinplayer = spy.new(nilfn),
+	---@type spy
+	register_on_mods_loaded = spy.new(nilfn),
+	get_player_information = ident{},
+	---@type spy
+	log = spy.new(nilfn),
+}
+local onleaveplayer_cb = function (...)
+	for _,call in ipairs(minetest.register_on_leaveplayer.calls) do
+		call.vals[1](...)
+	end
+end
+local onjoinplayer_cb = function (...)
+	for _,call in ipairs(minetest.register_on_joinplayer.calls) do
+		call.vals[1](...)
+	end
+end
+local onmodloaded_cb = function (...)
+	for _,call in ipairs(minetest.register_on_mods_loaded.calls) do
+		call.vals[1](...)
+	end
+end
+local FORMSPEC_AST_PATH = '../formspec_ast'
+_G.FORMSPEC_AST_PATH = FORMSPEC_AST_PATH
+function minetest.get_modpath(modname)
+	if modname == "flow" then return "../flow" end
+	if modname == "formspec_ast" then return FORMSPEC_AST_PATH end
+	if modname == "flow_extras" then return "../flow-extras" end
+	assert(modname == "sway", "modname must be sway. was " .. modname)
+	return "."
+end
+_G.formspec_ast = {}
+dofile(FORMSPEC_AST_PATH .. '/init.lua')
+_G.minetest = minetest -- Must be defined after formspec_ast runs
+_G.flow = {}
 dofile"../flow/init.lua"
+_G.flow_extras = {}
 dofile"../flow-extras/init.lua"
 dofile"init.lua"
 local default_pages = sway.pages
 --local default_pages_ordered = sway.pages_ordered
-assert(pending, "Hack to ensure pending doesn't give errors if it's not in use")
-local sway, flow_extras, formspec_ast, flow = sway, flow_extras, formspec_ast, flow
 local gui = flow.widgets
+before_each(function()
+	sway.pages = {}
+	sway.pages_ordered = {}
+	sway.enabled = true
+end)
 describe("*basics*", function ()
 	it("doesn't error out when loading init.lua", function ()
 		assert(true, "by the time it got here it would have failed if it didn't work")
@@ -105,10 +172,6 @@ describe("*basics*", function ()
 end)
 describe("pages", function ()
 	local testpagename = "sway:test"
-	before_each(function()
-		sway.pages = {}
-		sway.pages_ordered = {}
-	end)
 	describe("register_page", function ()
 		it("is a function on sway", function ()
 			assert.equal("function", type(sway.register_page))
@@ -199,12 +262,14 @@ describe("pages", function ()
 		end)
 		it("logs that a page is getting overriden", function ()
 			sway.register_page(testpagename, { get = function () end })
+
 			sway.override_page(testpagename, {})
-			assert.stub(minetest.log).was.called_with(
+
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] override_page: '" .. testpagename .. "' is becoming overriden"
 			)
-			assert.stub(minetest.log).was.called(1)
+			assert.spy(minetest.log).was.called(1)
 			minetest.log:clear()
 		end)
 		it("copies all keys from the new def onto the old table", function ()
@@ -227,7 +292,7 @@ describe("pages", function ()
 				["sway:test2"] = def,
 			}, sway.pages)
 			assert.same({ def }, sway.pages_ordered)
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] override_page: '" .. testpagename .. "' is becoming renamed to 'sway:test2'"
 			)
@@ -247,7 +312,7 @@ describe("pages", function ()
 		end)
 	end)
 	describe("pages", function ()
-		-- TODO isn't this a pointless assertion?
+		-- TODO: isn't this a pointless assertion?
 		it("is a table on sway", function ()
 			assert.equal("table", type(sway.pages))
 		end)
@@ -287,13 +352,9 @@ describe("pages", function ()
 			assert.same("sway:crafting", sway.get_homepage_name{}) -- This table is a mock of the player api
 		end)
 		it("can be overriden", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old = sway.get_homepage_name
-			function sway.get_homepage_name(_)
-				return testpagename
-			end
+			agent(sway, "get_homepage_name", ident(testpagename))
 			assert.same(testpagename, sway.get_homepage_name{}) -- This table is a mock of the player api
-			sway.get_homepage_name = old
+			sway.get_homepage_name:revert()
 		end)
 		-- NOTE: Requires testing of the other stuff.... perhaps it should be tested from callsite instead
 		--pending"is given the player object"
@@ -309,124 +370,97 @@ describe("pages", function ()
 			end, "[sway] set_page: expected a string for the page name. Got a 'table'")
 		end)
 		it("gets the current page, sets to the new page and asserts if the newpage is invalid", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_pages = sway.pages
-			local old_get_or_create_context = sway.get_or_create_context
 			local ctx = {}
-			sway.pages = {}
-			sway.get_or_create_context = function ()
-				return ctx
-			end
+			agent(sway, "get_or_create_context", ident(ctx))
 			assert.has_error(function ()
 				sway.set_page({}, "fake:page")
 			end, "[sway] set_page: Page not found: 'fake:page'")
 			assert.same({}, ctx)
-			sway.get_or_create_context = old_get_or_create_context
-			sway.pages = old_pages
+			sway.get_or_create_context:revert()
 		end)
 		it("if the newpage is valid, calls set_player_inventory_formspec", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_get_or_create_context = sway.get_or_create_context
-			local old_pages = sway.pages
-			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
 			local ctx = {}
 			local player = {}
 			sway.pages = { ["real:page"]={} }
-			sway.get_or_create_context = function ()
-				return ctx
-			end
-			local spif_calls = {}
-			sway.set_player_inventory_formspec = function (...)
-				spif_calls[#spif_calls+1] = {...}
-			end
+			agent(sway, "get_or_create_context", ident(ctx))
+			stub(sway, "set_player_inventory_formspec")
+
 			sway.set_page(player, "real:page")
-			sway.get_or_create_context = old_get_or_create_context
-			sway.pages = old_pages
-			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
-			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+
+			assert.stub(sway.set_player_inventory_formspec).was.called(1)
+			assert.stub(sway.set_player_inventory_formspec).was.called_with(player, ctx)
 			assert.same({page = "real:page"}, ctx, "context")
+			sway.get_or_create_context:revert()
+			sway.set_player_inventory_formspec:revert()
 		end)
 		it("if there's an on_leave function it calls it", function ()
-			-- TODO: use spys mocks and stubs properly
-			-- TODO  should I use test composition for these tests? They're nearly exactly the same.
-			local old_get_or_create_context = sway.get_or_create_context
-			local old_pages = sway.pages
-			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
+			-- TODO: should I use test composition for these tests? They're nearly exactly the same.
 			local ctx = {page = "old:page"}
-			local player = {}
-			local ol_calls = {}
-			local function on_leave(...)
-				ol_calls[#ol_calls+1] = {...}
-			end
-			local old_page = { on_leave = on_leave }
+			local player = {name="asdfasdf"}
 			sway.pages = {
-				["old:page"]=old_page,
+				["old:page"]={title="asdfasdf"},
 				["real:page"]={}
 			}
-			sway.get_or_create_context = function ()
-				return ctx
-			end
-			local spif_calls = {}
-			sway.set_player_inventory_formspec = function (...)
-				spif_calls[#spif_calls+1] = {...}
-			end
+			---@type spy
+			local ol = stub(sway.pages["old:page"], "on_leave")
+			agent(sway, "get_or_create_context", ident(ctx))
+			stub(sway, "set_player_inventory_formspec")
+
 			sway.set_page(player, "real:page")
-			sway.get_or_create_context = old_get_or_create_context
-			sway.pages = old_pages
-			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
-			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+
+			sway.get_or_create_context:revert()
+			assert.stub(sway.set_player_inventory_formspec).was.called(1)
+			assert.stub(sway.set_player_inventory_formspec).was.called_with(player, ctx)
+			sway.set_player_inventory_formspec:revert()
+
 			assert.same({page = "real:page"}, ctx, "context")
-			assert.same({{old_page, player, ctx}}, ol_calls, "ol_calls")
+
+			assert.stub(ol).was.called(1)
+			assert.stub(ol).was.called_with(sway.pages["old:page"], player, { page = "old:page" })
+			ol:revert()
 		end)
 		it("on_leave is not called if the page is not found", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_pages = sway.pages
-			local old_get_or_create_context = sway.get_or_create_context
 			local ctx = {page = "old:page"}
-			local ol_calls = {}
-			local function on_leave(...)
-				ol_calls[#ol_calls+1] = {...}
-			end
-			local old_page = { on_leave = on_leave }
-			sway.pages = { ["old:page"]=old_page }
-			sway.get_or_create_context = function ()
-				return ctx
-			end
+			sway.pages = { ["old:page"]={} }
+			---@type stub
+			local ol = stub(sway.pages["old:page"], "on_leave")
+			agent(sway, "get_or_create_context", ident(ctx))
+
 			assert.has_error(function ()
 				sway.set_page({}, "fake:page")
 			end, "[sway] set_page: Page not found: 'fake:page'")
+
+			sway.get_or_create_context:revert()
 			assert.same({ page = "old:page" }, ctx, "context")
-			assert.same({}, ol_calls, "ol_calls")
-			sway.get_or_create_context = old_get_or_create_context
-			sway.pages = old_pages
+			assert.stub(ol).was.not_called()
+			ol:revert()
 		end)
 		it("if there's an on_enter function it calls it", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_get_or_create_context = sway.get_or_create_context
-			local old_pages = sway.pages
-			local old_set_player_inventory_formspec = sway.set_player_inventory_formspec
 			local ctx = {}
 			local player = {}
-			local oe_calls = {}
-			local function on_enter(...)
-				oe_calls[#oe_calls+1] = {...}
-			end
-			local new_page = { on_enter = on_enter }
-			sway.pages = { ["real:page"]= new_page }
-			sway.get_or_create_context = function ()
-				return ctx
-			end
-			local spif_calls = {}
-			sway.set_player_inventory_formspec = function (...)
-				spif_calls[#spif_calls+1] = {...}
-			end
+			sway.pages = {
+				["real:page"] = {
+					title = "the real page"
+				}
+			}
+			---@type stub
+			local oe = stub(sway.pages["real:page"],"on_enter")
+			agent(sway, "get_or_create_context", ident(ctx))
+			stub(sway, "set_player_inventory_formspec")
+
 			sway.set_page(player, "real:page")
-			sway.get_or_create_context = old_get_or_create_context
-			sway.pages = old_pages
-			sway.set_player_inventory_formspec = old_set_player_inventory_formspec
-			assert.same({{player, ctx}}, spif_calls, "spif_calls")
+
+			sway.get_or_create_context:revert()
+
 			assert.same({page = "real:page"}, ctx, "context")
-			assert.same({{new_page, player, ctx}}, oe_calls, "oe_calls")
+
+			assert.stub(sway.set_player_inventory_formspec).was.called(1)
+			assert.stub(sway.set_player_inventory_formspec).was.called_with(player, ctx)
+			sway.set_player_inventory_formspec:revert()
+
+			assert.stub(oe).was.called(1)
+			assert.stub(oe).was.called_with(sway.pages["real:page"], player, { page = "real:page" })
+			oe:revert()
 		end)
 	end)
 	describe("get_page", function ()
@@ -434,19 +468,14 @@ describe("pages", function ()
 			assert.same("function", type(sway.get_page))
 		end)
 		it("makes a call to get the context then returns it if falsy", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_get_or_create_context = sway.get_or_create_context
-			local gocc_called_with = {}
 			local ctx = { page = "page:name" }
 			local player = {234234}
-			sway.get_or_create_context = function (...)
-				gocc_called_with[# gocc_called_with+1] = {...}
-				return ctx
-			end
+			agent(sway, "get_or_create_context", ident(ctx))
 			local ret = sway.get_page(player)
-			assert.same(gocc_called_with, {{player}}, "calls to get or get_or_create_context")
+			assert.agent(sway.get_or_create_context).was.called(1)
+			assert.agent(sway.get_or_create_context).was.called_with(player)
 			assert.same(ret, "page:name", "return value")
-			sway.get_or_create_context = old_get_or_create_context
+			sway.get_or_create_context:revert()
 		end)
 	end)
 end)
@@ -474,18 +503,18 @@ describe("context", function ()
 			minetest.log:clear() -- TODO: this is only needed because of a buggy test elsewhere
 			sway.set_context(mock_playerref)
 			-- assert that it was logged to be deleted
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] set_context: deleting context for 'lazerbeak12345'"
 			)
-			assert.stub(minetest.log).was.called(1)
+			assert.spy(minetest.log).was.called(1)
 			sway.get_or_create_context(mock_playerref)
 			-- assert that getting the context causes a new log item that it was created
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
 			)
-			assert.stub(minetest.log).was.called(2)
+			assert.spy(minetest.log).was.called(2)
 			-- delete it again to keep state clean. We know this works because we just asserted that it does.
 			sway.set_context(mock_playerref)
 			minetest.log:clear()
@@ -524,20 +553,20 @@ describe("context", function ()
 			sway.set_context(mock_playerref)
 			local ctx = sway.get_or_create_context(mock_playerref)
 			assert.truthy(ctx, "It exsists at first.")
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
 			)
 			-- Clean the state again
 			minetest.log:clear() -- TODO: this is only needed because of a buggy test elsewhere
 			sway.set_context(mock_playerref)
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] set_context: deleting context for 'lazerbeak12345'"
 			)
 			local old_ctx = ctx
 			ctx = sway.get_or_create_context(mock_playerref)
-			assert.stub(minetest.log).was.called_with(
+			assert.spy(minetest.log).was.called_with(
 				"action",
 				"[sway] get_or_create_context: creating new context for 'lazerbeak12345'"
 			)
@@ -565,78 +594,68 @@ describe("context", function ()
 			assert.equals(context, r_context, "context is equal")
 		end)
 		it("if only the player is provided, call get_or_create_context with the player", function ()
-			-- TODO: use spys mocks and stubs properly
-			--TODO spy broke .... the workaround is fine
-			--spy(sway,"get_or_create_context")
-			local old_get_or_create_context = sway.get_or_create_context
-			local gocc_called_with ={}
-			sway.get_or_create_context = function (...)
-				gocc_called_with[#gocc_called_with+1] = {...}
-				return old_get_or_create_context(...)
-			end
-			local old_get_player_by_name = minetest.get_player_by_name
 			local player, i_context = {}, {}
-			local get_player_by_name_count = 0
-			minetest.get_player_by_name = function ()
-				assert(false, "player by name must not be called!")
-			end
+
+			spy.on(sway, "get_or_create_context")
+			---@type stub
+			local gpbn = stub(minetest, "get_player_by_name")
+
 			local r_player, r_context
 			flow_extras.set_wrapped_context(i_context, function ()
 				r_player, r_context = sway.get_player_and_context(player)
 			end)
-			--assert.spy(sway.get_or_create_context).was.called_with(player)
-			assert.same({{player}}, gocc_called_with, "all args")
-			assert.equals(player, gocc_called_with[1][1], "first arg")
+
 			assert.equals(player, r_player, "player is equal")
 			assert.equals(i_context, r_context, "context is equal")
-			assert.equals(0, get_player_by_name_count, "we don't need to call this function")
-			sway.get_or_create_context = old_get_or_create_context
-			minetest.get_player_by_name = old_get_player_by_name
+
+			assert.spy(sway.get_or_create_context).was.called(1)
+			assert.spy(sway.get_or_create_context).was.called_with(player)
+			sway.get_or_create_context:revert()
+
+			assert.stub(gpbn).was.not_called()
+			gpbn:revert()
 		end)
 		it("if only the context is provided, return the player referenced by the context", function ()
-			-- TODO: use spys mocks and stubs properly
 			local i_player, context = {}, {
 				player_name = "lazerbeak12345"
 			}
-			local old_get_player_by_name = minetest.get_player_by_name
-			local gpbn_calls = {}
-			minetest.get_player_by_name = function (...)
-				gpbn_calls[#gpbn_calls+1] = {...}
-				return i_player
-			end
+
+			---@type Agent
+			local gpbn = agent(minetest, "get_player_by_name", ident(i_player))
+
 			local r_player, r_context = sway.get_player_and_context(nil, context)
-			assert.same({{"lazerbeak12345"}}, gpbn_calls)
+
 			assert.equals(i_player, r_player)
 			assert.equals(context, r_context)
-			minetest.get_player_by_name = old_get_player_by_name
+
+			assert.agent(gpbn).was.called(1)
+			assert.agent(gpbn).was.called_with"lazerbeak12345"
+			gpbn:revert()
 		end)
 		it("if neither args are provided, call get_or_create_context with nothing", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_get_or_create_context = sway.get_or_create_context
-			local gocc_called_with ={}
-			sway.get_or_create_context = function (...)
-				gocc_called_with[#gocc_called_with+1] = {...}
-				return old_get_or_create_context(...)
-			end
-			local old_get_player_by_name = minetest.get_player_by_name
 			local i_player, i_context = {}, {
 				player_name = "lazerbeak12345"
 			}
-			local gpbn_calls = {}
-			minetest.get_player_by_name = function (...)
-				gpbn_calls[#gpbn_calls+1] = {...}
-				return i_player
-			end
+
+			spy.on(sway, "get_or_create_context")
+			---@type Agent
+			local gpbn = agent(minetest, "get_player_by_name", ident(i_player))
+
 			local r_player, r_context
 			flow_extras.set_wrapped_context(i_context, function ()
 				r_player, r_context = sway.get_player_and_context()
 			end)
-			assert.same({{"lazerbeak12345"}}, gpbn_calls, "calls to get_player_by_name")
-			assert.same({{}}, gocc_called_with, "all args to get_or_create_context")
-			assert.equals(i_player, r_player, "player is equal")
-			assert.equals(i_context, r_context, "context is equal")
-			sway.get_or_create_context = old_get_or_create_context
-			minetest.get_player_by_name = old_get_player_by_name
+
+			assert.same(i_player, r_player, "player is equal")
+			assert.same(i_context, r_context, "context is equal")
+
+			assert.spy(sway.get_or_create_context).was.called(1)
+			assert.spy(sway.get_or_create_context).was.called_with(nil)
+			sway.get_or_create_context:revert()
+
+			assert.agent(gpbn).was.called(1)
+			assert.agent(gpbn).was.called_with"lazerbeak12345"
+			gpbn:revert()
 		end)
 	end)
 end)
@@ -689,27 +708,18 @@ describe("default page", function ()
 		end
 	end)
 	it("provides a get function that returns the result of sway.Form with the result of CraftingRow", function ()
-		-- TODO: use spys mocks and stubs properly
 		local crafting = default_pages["sway:crafting"]
 		local get = crafting.get
 
-		local old_CR = crafting.CraftingRow
-		local old_Form = sway.Form
-
-		local CR_args = {}
-		crafting.CraftingRow = function (self, ...)
-			CR_args[#CR_args+1] = {self, ...}
+		agent(crafting, "CraftingRow", function (_, ...)
 			return gui.VBox{ name = "crow", ... }
-		end
-		sway.Form = function (table)
+		end)
+		agent(sway, "Form", function (table)
 			table.name = "form"
 			return gui.VBox(table)
-		end
+		end)
 
 		local render = get(crafting)
-
-		sway.Form = old_Form
-		crafting.CraftingRow = old_CR
 
 		local form = flow_extras.search{
 			tree = render,
@@ -718,13 +728,17 @@ describe("default page", function ()
 			check_root = true
 		}()
 
+		sway.Form:revert()
 		assert.truthy(form, "Contains Form")
-		assert.equal(crafting, CR_args[1][1], "it's passed self")
 		assert.truthy(flow_extras.search{
 			tree = form,
 			key = "name",
 			value = "crow",
 		}(), "contains crafting row")
+
+		assert.agent(crafting.CraftingRow).was.called(1)
+		assert.agent(crafting.CraftingRow).was.called_with(crafting)
+		crafting.CraftingRow:revert()
 	end)
 end)
 -- tests for the API integration with Minetest, Flow and Flow-Extras (the tools this library is based upon)
@@ -742,46 +756,30 @@ describe("Lower-Layer Integration", function ()
 	local fakeplayer = {get_player_name=ident"fakeplayer"}
 	describe("on_leaveplayer", function ()
 		it("calls set_context", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			local sc_calls = {}
-			sway.set_context = function (...)
-				sc_calls[#sc_calls+1] = {...}
-			end
+			stub(sway, "set_context")
+
 			onleaveplayer_cb(fakeplayer)
-			sway.set_context = old_sc
-			assert.same({{fakeplayer}}, sc_calls)
+
+			assert.stub(sway.set_context).was.called(1)
+			assert.stub(sway.set_context).was.called_with(fakeplayer)
+			sway.set_context:revert()
 		end)
 	end)
 	describe("on_joinplayer", function ()
 		it("if sway is disabled, the callback does nothing", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_enabled = sway.enabled
 			sway.enabled = false
-			local old_spif = sway.set_player_inventory_formspec
-			local spif_calls = {}
-			sway.set_player_inventory_formspec = function (...)
-				spif_calls[#spif_calls+1] = {...}
-			end
+			spy.on(sway, "set_player_inventory_formspec")
 			onjoinplayer_cb(fakeplayer)
-			sway.enabled = old_enabled
-			sway.set_player_inventory_formspec = old_spif
-			assert.same({}, spif_calls)
+			assert.spy(sway.set_player_inventory_formspec).was.not_called()
+			sway.set_player_inventory_formspec:revert()
 		end)
 		it("if sway is enabled, it calls sway.set_player_inventory_formspec", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_enabled = sway.enabled
 			sway.enabled = true
-			local old_spif = sway.set_player_inventory_formspec
-			local spif_calls = {}
-			sway.set_player_inventory_formspec = function (...)
-				spif_calls[#spif_calls+1] = {...}
-			end
+			stub(sway, "set_player_inventory_formspec")
 			onjoinplayer_cb(fakeplayer)
-			sway.enabled = old_enabled
-			sway.set_player_inventory_formspec = old_spif
-			assert.same({{fakeplayer}}, spif_calls)
-			assert.equal(fakeplayer, spif_calls[1][1])
+			assert.stub(sway.set_player_inventory_formspec).was.called(1)
+			assert.stub(sway.set_player_inventory_formspec).was.called_with(fakeplayer)
+			sway.set_player_inventory_formspec:revert()
 		end)
 	end)
 	describe("set_inventory_formspec", function ()
@@ -791,33 +789,30 @@ describe("Lower-Layer Integration", function ()
 			end) -- Doesn't matter which error message. gpac has a good enough one.
 		end)
 		it("calls get_player_and_context to ensure both are gotten if possible", function ()
-			-- TODO: use spys mocks and stubs properly
 			local p, x = {}, {}
 			local p1, x1 = {}, {} -- Doing this ensures that it's the return of gpac that is gotten later
-			local old_gpac = sway.get_player_and_context
-			local gpac_calls = {}
-			sway.get_player_and_context = function (...)
-				gpac_calls[#gpac_calls+1] = {...}
+			local gpac = agent(sway, "get_player_and_context", function ()
 				return p1, x1
-			end
+			end)
 			-- INFO: This is likely to break since it's a private API
 			-- TODO: feature request that to be stable?
 			local sf_mti = getmetatable(sway.form).__index
-			local old_saif = sf_mti.set_as_inventory_for
 			local saif_calls = {}
-			sf_mti.set_as_inventory_for = function (...)
+			agent(sf_mti, "set_as_inventory_for", function (...)
 				saif_calls[#saif_calls+1] = {...}
-			end
+			end)
+
 			sway.set_player_inventory_formspec(p,x)
-			sway.get_player_and_context = old_gpac
-			sf_mti.set_as_inventory_for = old_saif
-			assert.equal(#gpac_calls, 1, "get_player_and_context")
-			assert.equal(gpac_calls[1][1], p, "get_player_and_context ctx")
-			assert.equal(gpac_calls[1][2], x, "get_player_and_context ctx")
-			assert.equal(#saif_calls, 1, "set_as_inventory_for")
+
+			assert.agent(gpac).was.called(1)
+			assert.agent(gpac).was.called_with(p, x)
+			gpac:revert()
+
+			assert.agent(sf_mti.set_as_inventory_for).was.called(1)
 			-- First arg is a "self" arg, 2nd and 3rd matter
 			assert.equal(saif_calls[1][2], p1, "set_as_inventory_for p")
 			assert.equal(saif_calls[1][3], x1, "set_as_inventory_for x")
+			sf_mti.set_as_inventory_for:revert()
 		end)
 	end)
 	describe("sway.form", function ()
@@ -825,78 +820,64 @@ describe("Lower-Layer Integration", function ()
 			return formspec_ast.parse(sway.form:render_to_formspec_string(p, x, false))
 		end
 		it("calls set_context to ensure the context is set per player", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			local sc_calls = {}
-			sway.set_context = function (...)
-				sc_calls[#sc_calls+1] = {...}
-				error"this is a test designed to fail here"
-			end
 			local p, c = fakeplayer, {}
+			agent(sway, "set_context", function ()
+				error"this is a test designed to fail here"
+			end)
+
 			assert.has_error(function ()
 				do_render(p, c)
 			end, "this is a test designed to fail here")
-			sway.set_context = old_sc
-			assert.same(sc_calls, {{p, c}}, "calls")
-			assert.equal(sc_calls[1][1], p, "player")
-			assert.equal(sc_calls[1][2], c, "ctx")
+
+			assert.agent(sway.set_context).was.called(1)
+			assert.agent(sway.set_context).was.called_with(p, c)
+			sway.set_context:revert()
 		end)
 		it("calls flow_extras.set_wrapped_context to wrap the context", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
-			local old_swc = flow_extras.set_wrapped_context
-			local swc_calls = {}
-			flow_extras.set_wrapped_context = function (c, f)
-				swc_calls[#swc_calls+1] = {c, type(f)}
-				error"this is a test designed to fail here"
-			end
 			local p, c = fakeplayer, {}
+			stub(sway,"set_context") -- We don't want to pollute anything in these tests.
+			agent(flow_extras, "set_wrapped_context", function ()
+				error"this is a test designed to fail here"
+			end)
+
 			assert.has_error(function ()
 				do_render(p, c)
 			end, "this is a test designed to fail here")
-			sway.set_context = old_sc
-			flow_extras.set_wrapped_context = old_swc
-			assert.same(swc_calls, {{c, "function"}}, "swc calls")
-			assert.equal(swc_calls[1][1], c, "swc ctx")
-			assert.same(swc_calls[1][2], "function", "swc function")
+
+			sway.set_context:revert()
+			assert.agent(flow_extras.set_wrapped_context).was.called(1)
+			assert.agent(flow_extras.set_wrapped_context).was.called_with(c, match.is_function())
+			flow_extras.set_wrapped_context:revert()
 		end)
 		it("calls sway.get_form from inside the wrapped context", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			sway.set_context = nilfn
-			local my_ex = sway.get_form
-			local gf_calls = {}
-			local gf_s_ctx
-			sway.get_form = function (...)
-				gf_calls[#gf_calls+1] = {...}
-				gf_s_ctx = sway.get_or_create_context()
-				error"this is a test designed to fail here"
-			end
 			local p, c = fakeplayer, {}
+			stub(sway,"set_context") -- We don't want to pollute anything in these tests.
+			local ctx_from_inside_get_form
+			agent(sway, "get_form", function ()
+				ctx_from_inside_get_form = sway.get_or_create_context()
+				error"this is a test designed to fail here"
+			end)
+
 			assert.has_error(function ()
 				do_render(p, c)
 			end, "this is a test designed to fail here")
-			sway.set_context = old_sc
-			sway.get_form = my_ex -- I guess the old_gf is the new_gf again 😆
-			assert.same(gf_calls, {{p, c}}, "gf_calls")
-			assert.equal(gf_calls[1][1], p, "gf_calls p")
-			assert.equal(gf_calls[1][2], c, "gf_calls c")
-			assert.equal(gf_s_ctx, c, "can get context from inside form")
+
+			sway.set_context:revert()
+			assert.equal(ctx_from_inside_get_form, c, "can get context from inside form")
+			assert.agent(sway.get_form).was.called(1)
+			assert.agent(sway.get_form).was.called_with(p, c)
+			sway.get_form:revert()
 		end)
 		it("returns the form", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
-			local my_ex = sway.get_form
-			local form = gui.VBox{no_prepend=true, gui.Label{label="I am a label!"}}
-			sway.get_form = function ()
-				return form
-			end
 			local p, c = fakeplayer, {}
+			local form = gui.VBox{no_prepend=true, gui.Label{label="I am a label!"}}
+			stub(sway,"set_context") -- We don't want to pollute anything in these tests.
+			agent(sway, "get_form", ident(form))
+
 			local form_ret = do_render(p, c)
-			sway.set_context = old_sc
-			sway.get_form = my_ex
+
+			sway.set_context:revert()
+			sway.get_form:revert()
 			assert.same({
 				formspec_version = 1,
 				gui.Container{
@@ -909,25 +890,20 @@ describe("Lower-Layer Integration", function ()
 			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
 		end)
 		it("calls insert_prepend if no_prepend is not set in the form", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_sc = sway.set_context
-			sway.set_context = nilfn -- We don't want to pollute anything in these tests.
-			local ip = sway.insert_prepend
+			local form = gui.VBox{no_prepend=false, gui.Label{label="I am a label!"}}
+			stub(sway,"set_context") -- We don't want to pollute anything in these tests.
 			local ip_calls = {}
-			sway.insert_prepend = function (...)
+			agent(sway, "insert_prepend", function (...)
 				ip_calls[#ip_calls+1] = {...}
 				return ...
-			end
-			local my_ex = sway.get_form
-			local form = gui.VBox{no_prepend=false, gui.Label{label="I am a label!"}}
-			sway.get_form = function ()
-				return form
-			end
+			end)
+			agent(sway, "get_form", ident(form))
 			local p, c = fakeplayer, {}
+
 			local form_ret = do_render(p, c)
-			sway.set_context = old_sc
-			sway.get_form = my_ex
-			sway.insert_prepend = ip
+
+			sway.set_context:revert()
+			sway.get_form:revert()
 			assert.same({
 				formspec_version = 1,
 				gui.Container{
@@ -938,8 +914,10 @@ describe("Lower-Layer Integration", function ()
 					}
 				}
 			}, form_ret, "the rendered form is generated from the form returned from set_wrapped_context")
+			assert.agent(sway.insert_prepend).was.called(1)
 			assert.same(ip_calls, {{form}})
 			assert.equal(ip_calls[1][1], form)
+			sway.insert_prepend:revert()
 		end)
 	end)
 	-- The first horseman of bloated inventory mods, the component that forces you to use it, even when others are present.
@@ -1036,35 +1014,32 @@ describe("content functions", function ()
 		end)
 		it("contains a tabheader of certian description", function ()
 			local args = { nav_titles = { "title", "next page" }, current_idx = 1 }
-			local match = flow_extras.search{
+			local search_result = flow_extras.search{
 				tree = sway.NavGui(args),
 				value = "tabheader"
 			}()
-			assert.truthy(match, "tabheader was found")
-			assert.equal(match.name, "sway_nav_tabs")
-			assert.equal(match.captions, args.nav_titles, "titles")
-			assert.equal(match.current_tab, args.current_idx, "index")
-			assert.truthy(match.on_event, "event")
+			assert.truthy(search_result, "tabheader was found")
+			assert.equal(search_result.name, "sway_nav_tabs")
+			assert.equal(search_result.captions, args.nav_titles, "titles")
+			assert.equal(search_result.current_tab, args.current_idx, "index")
+			assert.truthy(search_result.on_event, "event")
 		end)
 		it("tabheader event calls set_page", function ()
-			-- TODO: use spys mocks and stubs properly
-			local args = { nav_titles = { "title", "next page" }, current_idx = 1 }
-			local match = flow_extras.search{
-				tree = sway.NavGui(args),
+			local p, x = {}, { nav = { a = "asdfasdf" }, form = { sway_nav_tabs = "a" } }
+			stub(sway, "set_page")
+
+			local search_result = flow_extras.search{
+				tree = sway.NavGui{ nav_titles = { "title", "next page" }, current_idx = 1 },
 				value = "tabheader"
 			}()
-			local sp = sway.set_page
-			local sp_calls = {}
-			sway.set_page = function (...)
-				sp_calls[#sp_calls+1] = {...}
-			end
-			local p, x = {}, { nav = { a = "asdfasdf" }, form = { sway_nav_tabs = "a" } }
-			local ret = match.on_event(p, x)
-			sway.set_page = sp
-			assert.truthy(match, "tabheader was found")
+			assert.truthy(search_result, "tabheader was found")
+
+			local ret = search_result.on_event(p, x)
+
 			assert.is_nil(ret, "ret")
-			assert.same({{p, "asdfasdf"}}, sp_calls, "all calls")
-			assert.equal(sp_calls[1][1], p, "first arg")
+			assert.stub(sway.set_page).was.called(1)
+			assert.stub(sway.set_page).was.called_with(p, "asdfasdf")
+			sway.set_page:revert()
 		end)
 	end)
 	describe("Form", function ()
@@ -1077,89 +1052,72 @@ describe("content functions", function ()
 			end, "[sway] Form: requires field table.")
 		end)
 		it("contains NavGui and the field children but not inv", function ()
-			-- TODO: use spys mocks and stubs properly
-			local NG = sway.NavGui
-			local NG_calls = {}
-			sway.NavGui = function (...)
-				NG_calls[#NG_calls+1] = {...}
-				return gui.Nil{}
-			end
-			local IT = sway.InventoryTiles
-			local IT_calls = {}
-			sway.InventoryTiles = function (...)
-				IT_calls[#IT_calls+1] = {...}
-			end
-			local gocc = sway.get_or_create_context
-			sway.get_or_create_context = function ()
-				return { nav_titles = {"the title"}, nav_idx = 3 }
-			end
-			local ret = sway.Form{ gui.Box{} }
-			local match = flow_extras.search{
-				tree = ret,
+			agent(sway, "NavGui", ident(gui.Nil{}))
+			stub(sway, "InventoryTiles")
+			agent(sway, "get_or_create_context", ident{ nav_titles = {"the title"}, nav_idx = 3 })
+
+			local search_result = flow_extras.search{
+				tree = sway.Form{ gui.Box{} },
 				value = "box"
 			}()
-			sway.NavGui = NG
-			sway.InventoryTiles = IT
-			sway.get_or_create_context = gocc
-			assert.same({}, IT_calls, "IT")
-			assert.truthy(match, "box")
-			assert.same({{{
+
+			sway.get_or_create_context:revert()
+
+			assert.truthy(search_result, "box")
+
+			assert.agent(sway.NavGui).was.called(1)
+			assert.agent(sway.NavGui).was.called_with{
 				nav_titles = {"the title"},
 				current_idx = 3
-			}}}, NG_calls, "NG")
+			}
+			sway.NavGui:revert()
+
+			assert.stub(sway.InventoryTiles).was.not_called()
+			sway.InventoryTiles:revert()
 		end)
 		it("show_inv field option includes the inv and the option is not exported", function ()
-			-- TODO: use spys mocks and stubs properly
-			local NG = sway.NavGui
-			local NG_calls = {}
-			sway.NavGui = function (...)
-				NG_calls[#NG_calls+1] = {...}
-				return gui.Nil{}
-			end
-			local IT = sway.InventoryTiles
-			local IT_calls = {}
-			sway.InventoryTiles = function (...)
-				IT_calls[#IT_calls+1] = {...}
-			end
-			local gocc = sway.get_or_create_context
-			sway.get_or_create_context = function ()
-				return { nav_titles = {"the title"}, nav_idx = 3 }
-			end
-			local ret = sway.Form{ show_inv = true, gui.Box{} }
-			local match = flow_extras.search{
-				tree = ret,
+			agent(sway, "NavGui", ident(gui.Nil{}))
+			stub(sway, "InventoryTiles")
+			agent(sway, "get_or_create_context", ident{ nav_titles = {"the title"}, nav_idx = 3 })
+
+			local search_result = flow_extras.search{
+				tree = sway.Form{ show_inv = true, gui.Box{} },
 				value = "box"
 			}()
-			sway.NavGui = NG
-			sway.InventoryTiles = IT
-			sway.get_or_create_context = gocc
-			assert.same({{}}, IT_calls, "IT")
-			assert.truthy(match, "box")
-			assert.same({{{
+
+			sway.get_or_create_context:revert()
+
+			assert.truthy(search_result, "box")
+
+			assert.agent(sway.NavGui).was.called(1)
+			assert.agent(sway.NavGui).was.called_with{
 				nav_titles = {"the title"},
 				current_idx = 3
-			}}}, NG_calls, "NG")
+			}
+			sway.NavGui:revert()
+
+			assert.stub(sway.InventoryTiles).was.called(1)
+			assert.stub(sway.InventoryTiles).was.called_with()
+			sway.InventoryTiles:revert()
 		end)
 	end)
 	describe("InventoryTiles", function ()
 		it("with w and h of 1, contains certian elements", function ()
-			-- TODO: use spys mocks and stubs properly
-			local feL = flow_extras.List
-			local feL_calls = {}
-			flow_extras.List = function (...)
-				feL_calls[#feL_calls+1] = {...}
-				return { "asdf" }
-			end
+			agent(flow_extras, "List", ident{ "asdf" })
+
 			local ret = sway.InventoryTiles{ w = 1, h = 1 }
-			flow_extras.List = feL
-			assert.same({{{
+
+			assert.agent(flow_extras.List).was.called(1)
+			assert.agent(flow_extras.List).was.called_with{
 				align_h = "center",
 				inventory_location = "current_player",
 				list_name = "main",
 				w = 1, h = 1,
 				bgimg = "sway_hb_bg.png",
 				spacing = 0.25,
-			}}}, feL_calls, "calls")
+			}
+			flow_extras.List:revert()
+
 			assert.same(gui.VBox{
 				align_v = "end",
 				expand = true,
@@ -1168,33 +1126,33 @@ describe("content functions", function ()
 			}, ret, "ret")
 		end)
 		it("default w and h", function ()
-			-- TODO: use spys mocks and stubs properly
-			local feL = flow_extras.List
-			local feL_calls = {}
-			flow_extras.List = function (...)
-				feL_calls[#feL_calls+1] = {...}
-				return { "asdfaa", #feL_calls }
-			end
+			local feL_call_count = 0
+			agent(flow_extras, "List", function ()
+				feL_call_count = feL_call_count + 1
+				return { "asdfaa", feL_call_count }
+			end)
+
 			local ret = sway.InventoryTiles{}
-			flow_extras.List = feL
-			assert.same({
-				{{
-					align_h = "center",
-					inventory_location = "current_player",
-					list_name = "main",
-					w = 8, h = 1,
-					bgimg = "sway_hb_bg.png",
-					spacing = 0.25,
-				}},
-				{{
-					align_h = "center",
-					inventory_location = "current_player",
-					list_name = "main",
-					w = 8, h = 3,
-					starting_item_index = 8,
-					spacing = 0.25,
-				}}
-			}, feL_calls, "calls")
+
+			assert.agent(flow_extras.List).was.called(2)
+			assert.agent(flow_extras.List).was.called_with{
+				align_h = "center",
+				inventory_location = "current_player",
+				list_name = "main",
+				w = 8, h = 1,
+				bgimg = "sway_hb_bg.png",
+				spacing = 0.25,
+			}
+			assert.agent(flow_extras.List).was.called_with{
+				align_h = "center",
+				inventory_location = "current_player",
+				list_name = "main",
+				w = 8, h = 3,
+				starting_item_index = 8,
+				spacing = 0.25,
+			}
+			flow_extras.List:revert()
+
 			assert.same(gui.VBox{
 				align_v = "end",
 				expand = true,
@@ -1211,105 +1169,80 @@ describe("content functions", function ()
 	end)
 	describe("get_form", function ()
 		it("calls get_player_and_context", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_gpac = sway.get_player_and_context
-			local gpac_calls = {}
-			sway.get_player_and_context = function (...)
-				gpac_calls[#gpac_calls+1] = {...}
+			local p, x = {name="player"}, {}
+			local gpac = agent(sway, "get_player_and_context", function ()
 				error"halt execution here to ensure this is called"
-			end
-			local p, x = {}, {}
+			end)
+
 			assert.has_error(function ()
 				sway.get_form(p,x)
 			end, "halt execution here to ensure this is called")
-			sway.get_player_and_context = old_gpac
-			assert.same({{p, x}}, gpac_calls, "args")
-			assert.equal(p, gpac_calls[1][1], "player arg")
-			assert.equal(x, gpac_calls[1][2], "ctx arg")
+
+			assert.agent(gpac).was.called(1)
+			assert.agent(gpac).was.called_with(p, x)
+			gpac:revert()
 		end)
 		it("returns result of get for found page", function ()
-			-- TODO: use spys mocks and stubs properly
-			local old_gpac = sway.get_player_and_context
-			sway.get_player_and_context = function (...)
-				return ...
-			end
-			local old_pu = sway.pages_ordered
-			local old_p = sway.pages
 			local pagename = "asdfasdf"
-			local pageContent = {}
-			local called = 0
-			local example_page = { name = pagename, get = function ()
-				called = called + 1
-				return pageContent
-			end }
-			sway.pages_ordered = {
-				example_page
-			}
-			sway.pages = {}
-			sway.pages[pagename] = example_page
 			local p, x = {}, { page = pagename }
+			local example_page = { get = nilfn }
+			sway.register_page(pagename, example_page)
+			local pageContent = gui.Label{ label = "asdfasfdasfdasfd" }
+			agent(example_page, "get", ident(pageContent))
+			local gpac = agent(sway, "get_player_and_context", function (...)
+				return ...
+			end)
+
 			local ret = sway.get_form(p,x)
-			sway.get_player_and_context = old_gpac
-			sway.pages_ordered = old_pu
-			sway.pages = old_p
+
+			gpac:revert()
 			assert.equal(pageContent, ret, "returns expected page")
-			assert.equal(1, called, "Called thingy")
+			assert.agent(example_page.get).was.called(1)
 		end)
 		describe("navigation loop", function ()
 			it("calls is_in_nav for all pages where it is defined, in order, in sway.pages_ordered", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
 				local pagename = "asdfasdf"
-				sway.pages_ordered = {}
-				sway.pages = {}
 				local p, x = {}, { page = "doesn't have one" }
-				local calls = {}
+				local order = {}
 				sway.register_page("doesn't have one",{
 					get = function ()
 						return gui.Nil{}
 					end,
 				})
+				spy.on(sway.pages["doesn't have one"], "get")
+				local pages = {}
 				for i = 1, 5 do
-					sway.register_page(pagename..i,{
+					local page = {
 						get = function ()
 							return gui.Nil{}
 						end,
 						actualOrder=i,
-						is_in_nav = function (self, ip, ix)
-							calls[#calls+1] = {
-								order = self.actualOrder,
-								ip = p == ip,
-								ix = x == ix,
-							}
+						is_in_nav = function (self)
+							order[#order+1] = self.actualOrder
 						end
-					})
+					}
+					sway.register_page(pagename..i, page)
+					spy.on(page, "get")
+					spy.on(page, "is_in_nav")
+					pages[#pages+1] = page
 				end
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
-				assert.same(calls, {
-					{ order = 1, ip = true, ix = true},
-					{ order = 2, ip = true, ix = true},
-					{ order = 3, ip = true, ix = true},
-					{ order = 4, ip = true, ix = true},
-					{ order = 5, ip = true, ix = true},
-				}, "called correctly")
+
+				gpac:revert()
+				assert.same(order, { 1, 2, 3, 4, 5 }, "called correctly")
+				for i = 1, 5 do
+					assert.spy(pages[i].get).was.not_called()
+					assert.spy(pages[i].is_in_nav).was.called(1)
+					assert.spy(pages[i].is_in_nav).was.called_with(pages[i], p, { page = "doesn't have one" })
+				end
+				assert.spy(sway.pages["doesn't have one"].get).was.called(1)
 			end)
 			it("adds the page info if is_in_nav is undefined or returns true", function ()
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				sway.pages_ordered = {}
-				sway.pages = {}
+				local p, x = {}, { page = "nothing else" }
 				sway.register_page("fun -> true",{
 					get = function ()
 						return gui.Nil{}
@@ -1333,11 +1266,13 @@ describe("content functions", function ()
 					end,
 					is_in_nav = nil
 				})
-				local p, x = {}, { page = "nothing else" }
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
+
+				gpac:revert()
 				assert.same(x, {
 					nav = {
 						"fun -> true",
@@ -1352,194 +1287,137 @@ describe("content functions", function ()
 		end)
 		describe("400 pages!", function ()
 			it("returns result of get for sway.page['403'] when page not found, and 403 is truthy", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				sway.pages_ordered = {}
-				sway.pages = {}
-				local hiddenCalled = false
+				local p, x = {}, { page = "hidden page" }
+				local retNil = ident(gui.Nil{})
 				sway.register_page("hidden page",{
-					get = function ()
-						hiddenCalled = true
-						return gui.Nil{}
-					end,
+					get = retNil,
 					is_in_nav = function () return false end
 				})
-				local fourOhThreeCalled = false
+				local hidden = spy.on(sway.pages["hidden page"], "get")
 				sway.register_page("403",{
-					get = function ()
-						fourOhThreeCalled = true
-						return gui.Nil{}
-					end,
+					get = retNil,
 					-- Most 404 pages would be hidden as well.
 					is_in_nav = function () return false end
 				})
-				local p, x = {}, { page = "hidden page" }
+				local fourOhThree = spy.on(sway.pages["403"], "get")
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
+
+				gpac:revert()
 				assert.same({
 					nav = { },
 					nav_titles = {},
 					nav_idx = -1,
 					page = "403"
 				}, x)
-				assert.False(hiddenCalled, "hidden called")
-				assert.True(fourOhThreeCalled, "403 called")
+				assert.spy(hidden).was.not_called()
+				assert.spy(fourOhThree).was.called()
 			end)
 			it("returns result of get for sway.page['404'] when page not found, and 404 is truthy", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				sway.pages_ordered = {}
-				sway.pages = {}
-				local fourOhThreeCalled = false
-				sway.register_page("403",{
-					get = function ()
-						fourOhThreeCalled = true
-						return gui.Nil{}
-					end,
-					-- Most 404 pages would be hidden as well.
-					is_in_nav = function () return false end
-				})
-				local fourOhFourCalled = false
-				sway.register_page("404",{
-					get = function ()
-						fourOhFourCalled = true
-						return gui.Nil{}
-					end,
-					-- Most 404 pages would be hidden as well.
-					is_in_nav = function () return false end
-				})
 				local p, x = {}, { page = "wrong page" }
+				local retNil = ident(gui.Nil{})
+				sway.register_page("403",{
+					get = retNil,
+					-- Most 404 pages would be hidden as well.
+					is_in_nav = function () return false end
+				})
+				local fourOhThree = spy.on(sway.pages["403"], "get")
+				sway.register_page("404",{
+					get = retNil,
+					-- Most 404 pages would be hidden as well.
+					is_in_nav = function () return false end
+				})
+				local fourOhFour = spy.on(sway.pages["404"], "get")
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
+
+				gpac:revert()
 				assert.same({
 					nav = { },
 					nav_titles = {},
 					nav_idx = -1,
 					page = "404"
 				}, x)
-				assert.False(fourOhThreeCalled, "403 called")
-				assert.True(fourOhFourCalled, "404 called")
+				assert.spy(fourOhThree).was.not_called()
+				assert.spy(fourOhFour).was.called()
 			end)
 		end)
 		describe("when page is not found and 400 error pages aren't present", function ()
 			it("returns gui.Nil and logs an error if the missing page is the homepage", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				local old_mtl = minetest.log
-				local mtl_calls = {}
-				minetest.log = function (...)
-					mtl_calls[#mtl_calls+1] = {...}
-				end
-				sway.pages_ordered = {}
-				sway.pages = {}
 				local p, x = {}, { page = "sway:crafting" }
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
-				minetest.log = old_mtl
+
+				gpac:revert()
 				assert.same({
 					nav = { },
 					nav_titles = {},
 					nav_idx = -1,
 					page = "404"
 				}, x)
-				assert.same({{
+				assert.spy(minetest.log).was.called_with(
 					"error",
 					"[sway] Couldn't find the requested page, '\"sway:crafting\"', which is also the home page."
-				}}, mtl_calls)
+				)
+				minetest.log:clear()
 			end)
 			it("logs an error, changes the page to the homepage and asserts that the homepage is possible to get", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				local old_mtl = minetest.log
-				local mtl_calls = {}
-				minetest.log = function (...)
-					mtl_calls[#mtl_calls+1] = {...}
-				end
-				sway.pages_ordered = {}
-				sway.pages = {}
 				local p, x = {}, { page = "asdf" }
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+
 				assert.has_error(function ()
 					sway.get_form(p,x)
 				end, "[sway] Invalid homepage")
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
-				minetest.log = old_mtl
+
+				gpac:revert()
 				assert.same({
 					nav = { },
 					nav_titles = {},
 					nav_idx = -1,
 					page = "404"
 				}, x)
-				assert.same({{
+				assert.spy(minetest.log).was.called_with(
 					"warning",
 					"[sway] Couldn't find '\"asdf\"' so switching to homepage."
-				}}, mtl_calls)
+				)
+				minetest.log:clear()
 			end)
 			it("logs an error, changes the page to the homepage and re-calls get_form", function ()
-				-- TODO: use spys mocks and stubs properly
-				local old_gpac = sway.get_player_and_context
-				sway.get_player_and_context = function (...)
-					return ...
-				end
-				local old_po = sway.pages_ordered
-				local old_p = sway.pages
-				local old_mtl = minetest.log
-				local mtl_calls = {}
-				minetest.log = function (...)
-					mtl_calls[#mtl_calls+1] = {...}
-				end
-				sway.pages_ordered = {}
-				sway.pages = {}
 				local p, x = {}, { page = "asdf" }
-				local old_sp = sway.set_page
-				local sp_calls = {}
-				sway.set_page = function (...)
-					sp_calls[#sp_calls+1] = {...}
+				local gpac = agent(sway, "get_player_and_context", function (...)
+					return ...
+				end)
+				agent(sway, "set_page", function ()
 					x.page = "sway:crafting"
-				end
+				end)
 				sway.register_page("sway:crafting", {
-					get = function ()
-						return gui.Nil{}
-					end
+					get = ident(gui.Nil{})
 				})
+
 				sway.get_form(p,x)
-				sway.get_player_and_context = old_gpac
-				sway.pages_ordered = old_po
-				sway.pages = old_p
-				sway.set_page = old_sp
-				minetest.log = old_mtl
-				assert.same({{
+
+				gpac:revert()
+				assert.spy(minetest.log).was.called_with(
 					"warning",
 					"[sway] Couldn't find '\"asdf\"' so switching to homepage."
-				}}, mtl_calls)
-				assert.same({{p,"sway:crafting"}}, sp_calls)
+				)
+				minetest.log:clear()
+
+				assert.agent(sway.set_page).was.called(1)
+				assert.agent(sway.set_page).was.called_with(p, "sway:crafting")
+				sway.set_page:revert()
+
 				assert.same({
 					nav = { "sway:crafting" },
 					nav_titles = {},

@@ -1,5 +1,3 @@
-local minetest, sway, flow, flow_extras = minetest, sway, flow, flow_extras
-
 -- Load support for MT game translation.
 local S = minetest.get_translator("sway")
 
